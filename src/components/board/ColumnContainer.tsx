@@ -6,7 +6,6 @@ import { TaskCard } from './TaskCard';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Button } from '../ui/Button';
 import { Plus, MoreVertical, GripVertical, ArrowLeft, ArrowRight, Trash2, Edit2 } from 'lucide-react';
-import { useProject } from '../../hooks/useProject';
 import { Input } from '../ui/Input';
 
 interface ColumnProps {
@@ -15,24 +14,29 @@ interface ColumnProps {
   tasks: Task[];
   projectId: string;
   onMoveTask: (taskId: string, targetColId: string) => void;
+  onAddTask?: (title: string, columnId: string) => void;
   onUpdateColumn?: (columnId: string, updates: Partial<Column>) => void;
   onDeleteColumn?: (column: Column) => void;
   onMoveColumn?: (columnId: string, direction: 'left' | 'right') => void;
   canManage?: boolean;
+  canEdit?: boolean;
+  isOverlay?: boolean;
 }
 
 export const ColumnContainer: React.FC<ColumnProps> = ({ 
   column, 
   allColumns, 
   tasks, 
-  projectId,
+  projectId: _projectId,
   onMoveTask,
+  onAddTask,
   onUpdateColumn,
   onDeleteColumn,
   onMoveColumn,
-  canManage = true
+  canManage = true,
+  canEdit = true,
+  isOverlay = false
 }) => {
-  const { addTask } = useProject(projectId);
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -50,16 +54,21 @@ export const ColumnContainer: React.FC<ColumnProps> = ({
     isDragging
   } = useSortable({
     id: column.id,
+    disabled: isOverlay || !canManage,
     data: {
       type: 'Column',
       column,
     },
   });
 
-  const style = {
+  const style = isOverlay ? undefined : {
     transition,
     transform: CSS.Translate.toString(transform),
   };
+
+  useEffect(() => {
+    setEditedTitle(column.name);
+  }, [column.name]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -77,14 +86,17 @@ export const ColumnContainer: React.FC<ColumnProps> = ({
 
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) return;
-    addTask(newTaskTitle.trim(), column.id);
+    if (!newTaskTitle.trim() || !canEdit) return;
+    if (onAddTask) {
+      onAddTask(newTaskTitle.trim(), column.id);
+    }
     setNewTaskTitle('');
     setIsAdding(false);
   };
 
   const handleSaveTitle = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManage) return;
     if (editedTitle.trim() && onUpdateColumn && editedTitle !== column.name) {
       onUpdateColumn(column.id, { name: editedTitle.trim() });
     }
@@ -96,25 +108,38 @@ export const ColumnContainer: React.FC<ColumnProps> = ({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={isOverlay ? undefined : setNodeRef}
       style={style}
       role="region"
       aria-label={`${column.name} column, ${tasks.length} tasks`}
-      className={`flex flex-col w-80 max-h-full rounded-lg bg-secondary/50 border border-border shadow-sm shrink-0 ${isDragging ? 'opacity-50' : ''}`}
+      className={`flex flex-col w-80 max-h-full rounded-lg bg-secondary/50 border border-border shadow-sm shrink-0 ${
+        isDragging ? 'opacity-40' : ''
+      } ${isOverlay ? 'shadow-2xl border-primary ring-2 ring-primary/40 rotate-1' : ''}`}
     >
       {/* Column Header */}
       <div className="p-3.5 flex items-center justify-between border-b border-border/60 bg-card/30 rounded-t-lg">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <button 
-            {...attributes} 
-            {...listeners} 
-            className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded text-muted-foreground"
-            aria-label={`Drag to reorder ${column.name} column`}
-          >
-            <GripVertical className="h-4 w-4" />
-          </button>
+          {canManage ? (
+            <button 
+              {...(!isOverlay ? attributes : {})} 
+              {...(!isOverlay ? listeners : {})} 
+              className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              aria-label={`Drag to reorder ${column.name} column`}
+              type="button"
+            >
+              <GripVertical className="h-4 w-4" />
+            </button>
+          ) : (
+            <span 
+              className="p-1 text-muted-foreground/30 cursor-not-allowed" 
+              title="Viewers cannot reorder columns (read-only mode)"
+              aria-label="Column drag disabled for viewers"
+            >
+              <GripVertical className="h-4 w-4" />
+            </span>
+          )}
           
-          {isEditingTitle ? (
+          {isEditingTitle && canManage ? (
             <form onSubmit={handleSaveTitle} className="flex-1">
               <input
                 autoFocus
@@ -139,7 +164,7 @@ export const ColumnContainer: React.FC<ColumnProps> = ({
         </div>
 
         {/* Column menu */}
-        {canManage && (
+        {canManage && !isOverlay && (
           <div className="relative" ref={menuRef}>
             <Button 
               variant="ghost" 
@@ -217,6 +242,7 @@ export const ColumnContainer: React.FC<ColumnProps> = ({
               task={task} 
               allColumns={allColumns}
               onMoveTask={onMoveTask}
+              canEdit={canEdit}
             />
           ))}
         </SortableContext>
@@ -228,35 +254,41 @@ export const ColumnContainer: React.FC<ColumnProps> = ({
       </div>
 
       {/* Quick Add Task */}
-      <div className="p-2.5 border-t border-border/50 mt-auto bg-card/40 rounded-b-lg">
-        {isAdding ? (
-          <form onSubmit={handleAddTask} className="space-y-2">
-            <Input
-              placeholder="Task title..."
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              autoFocus
-              className="h-8 text-xs"
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') setIsAdding(false);
-              }}
-            />
-            <div className="flex gap-2">
-              <Button type="submit" size="sm" className="h-7 text-xs">Add</Button>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setIsAdding(false)}>Cancel</Button>
-            </div>
-          </form>
-        ) : (
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-foreground h-8 text-xs font-medium"
-            onClick={() => setIsAdding(true)}
-            aria-label={`Add task to ${column.name}`}
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" /> Add task
-          </Button>
-        )}
-      </div>
+      {!isOverlay && (
+        <div className="p-2.5 border-t border-border/50 mt-auto bg-card/40 rounded-b-lg">
+          {!canEdit ? (
+            <p className="px-2 py-1 text-xs text-muted-foreground italic text-center">
+              You don't have permission to add tasks
+            </p>
+          ) : isAdding ? (
+            <form onSubmit={handleAddTask} className="space-y-2">
+              <Input
+                placeholder="Task title..."
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                autoFocus
+                className="h-8 text-xs"
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setIsAdding(false);
+                }}
+              />
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" className="h-7 text-xs">Add</Button>
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setIsAdding(false)}>Cancel</Button>
+              </div>
+            </form>
+          ) : (
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-muted-foreground hover:text-foreground h-8 text-xs font-medium"
+              onClick={() => setIsAdding(true)}
+              aria-label={`Add task to ${column.name}`}
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" /> Add task
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -265,7 +297,8 @@ const SortableTask: React.FC<{
   task: Task; 
   allColumns: Column[];
   onMoveTask: (taskId: string, targetColId: string) => void;
-}> = ({ task, allColumns, onMoveTask }) => {
+  canEdit?: boolean;
+}> = ({ task, allColumns, onMoveTask, canEdit = true }) => {
   const {
     attributes,
     listeners,
@@ -275,6 +308,7 @@ const SortableTask: React.FC<{
     isDragging
   } = useSortable({
     id: task.id,
+    disabled: !canEdit,
     data: {
       type: 'Task',
       task,
@@ -290,14 +324,15 @@ const SortableTask: React.FC<{
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
+      {...(!canEdit ? {} : attributes)}
+      {...(!canEdit ? {} : listeners)}
       className={isDragging ? 'opacity-30' : ''}
     >
       <TaskCard 
         task={task} 
         columns={allColumns}
         onMove={(targetColId) => onMoveTask(task.id, targetColId)}
+        canEdit={canEdit}
       />
     </div>
   );

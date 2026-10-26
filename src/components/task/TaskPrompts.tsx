@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   MessageSquareQuote, 
@@ -8,12 +8,12 @@ import {
   Copy,
   CheckCircle2, 
   AlertCircle, 
-  HelpCircle,
-  Check,
-  Edit2
+  HelpCircle, 
+  Check, 
+  Edit2 
 } from 'lucide-react';
 import { PromptEntry } from '../../types';
-import { db } from '../../lib/db';
+import { db, onDbUpdate } from '../../lib/db';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -21,6 +21,7 @@ import { Badge } from '../ui/Badge';
 import { dateUtils } from '../../lib/dates';
 import { cn } from '../../lib/utils';
 import { announce } from '../../lib/announcer';
+import { toast } from '../ui/Toast';
 
 interface TaskPromptsProps {
   taskId: string;
@@ -49,7 +50,17 @@ export const TaskPrompts: React.FC<TaskPromptsProps> = ({ taskId, disabled = fal
     resultText: ''
   });
 
-  const prompts = db.getPrompts(taskId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const [prompts, setPrompts] = useState<PromptEntry[]>(() =>
+    db.getPrompts(taskId).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  );
+
+  useEffect(() => {
+    const update = () => {
+      setPrompts(db.getPrompts(taskId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+    };
+    update();
+    return onDbUpdate(update);
+  }, [taskId]);
 
   const handleAddPrompt = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +89,8 @@ export const TaskPrompts: React.FC<TaskPromptsProps> = ({ taskId, disabled = fal
       createdAt: new Date().toISOString()
     });
 
+    setPrompts(prev => [newPrompt, ...prev.filter(p => p.id !== newPrompt.id)]);
+    toast.success(`Prompt attempt logged (${newPrompt.model})`);
     announce(`Prompt attempt using ${newPrompt.model} logged`);
     setFormData({ promptText: '', resultText: '', model: '', outcome: 'worked', outcomeNotes: '' });
     setIsAdding(false);
@@ -104,6 +117,8 @@ export const TaskPrompts: React.FC<TaskPromptsProps> = ({ taskId, disabled = fal
       resultText: editFormData.resultText
     };
     db.savePrompt(updated);
+    setPrompts(prev => prev.map(p => p.id === updated.id ? updated : p));
+    toast.success('Prompt entry updated');
     announce('Prompt entry updated');
     setEditingId(null);
   };
@@ -112,6 +127,8 @@ export const TaskPrompts: React.FC<TaskPromptsProps> = ({ taskId, disabled = fal
     if (disabled) return;
     if (confirm('Delete this prompt entry?')) {
       db.deletePrompt(id);
+      setPrompts(prev => prev.filter(p => p.id !== id));
+      toast.info('Prompt entry deleted');
       announce('Prompt entry deleted');
     }
   };
@@ -119,6 +136,7 @@ export const TaskPrompts: React.FC<TaskPromptsProps> = ({ taskId, disabled = fal
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
+    toast.success('Prompt copied to clipboard');
     announce('Prompt copied to clipboard');
     setTimeout(() => setCopiedId(null), 2000);
   };
@@ -137,16 +155,25 @@ export const TaskPrompts: React.FC<TaskPromptsProps> = ({ taskId, disabled = fal
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-2">
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Prompt Log</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Track iterations, code outputs, and what succeeded or failed.</p>
         </div>
-        {!isAdding && !disabled && (
+        {disabled ? (
+          <div className="flex items-center gap-2">
+            <Button disabled size="sm" variant="outline" className="gap-1 opacity-50 cursor-not-allowed">
+              <Plus className="h-4 w-4" /> Add Prompt Entry
+            </Button>
+            <span className="text-xs text-muted-foreground italic">
+              You don't have permission to add log prompt attempts
+            </span>
+          </div>
+        ) : !isAdding ? (
           <Button onClick={() => setIsAdding(true)} size="sm" className="gap-1">
             <Plus className="h-4 w-4" /> Add Prompt Entry
           </Button>
-        )}
+        ) : null}
       </div>
 
       {isAdding && !disabled && (

@@ -58,7 +58,11 @@ export const TaskNotes: React.FC<TaskNotesProps> = ({ notes, onUpdate, disabled 
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Notes</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Supports GitHub Flavored Markdown and interactive checklists (- [ ] task).</p>
         </div>
-        {!disabled && (
+        {disabled ? (
+          <span className="text-xs text-muted-foreground italic">
+            You don't have permission to edit notes or toggle checklists
+          </span>
+        ) : (
           <div className="flex gap-1 border rounded-md p-0.5 bg-muted/30">
             <Button 
               variant={!isEditing ? "secondary" : "ghost"} 

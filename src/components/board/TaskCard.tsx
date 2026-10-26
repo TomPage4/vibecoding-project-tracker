@@ -22,6 +22,7 @@ interface TaskCardProps {
   task: Task;
   columns?: Column[];
   onMove?: (columnId: string) => void;
+  canEdit?: boolean;
   isOverlay?: boolean;
 }
 
@@ -29,6 +30,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   task, 
   columns = [], 
   onMove, 
+  canEdit = true,
   isOverlay 
 }) => {
   const navigate = useNavigate();
@@ -134,24 +136,38 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             {/* Keyboard "Move to..." menu button */}
             {otherColumns.length > 0 && onMove && (
               <div className="relative move-menu shrink-0">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 px-2 text-xs gap-1 opacity-70 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsMoveMenuOpen(!isMoveMenuOpen);
-                  }}
-                  aria-expanded={isMoveMenuOpen}
-                  aria-haspopup="menu"
-                  aria-label={`Move "${task.title}" to another column`}
-                  title="Move to another column"
-                >
-                  <ArrowRightLeft className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span className="sr-only sm:not-sr-only text-[11px]">Move</span>
-                </Button>
+                {!canEdit ? (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    disabled
+                    className="h-7 px-2 text-xs gap-1 opacity-40 cursor-not-allowed text-muted-foreground"
+                    title="Viewers cannot move tasks (read-only mode)"
+                    aria-label="Move task (disabled for viewers)"
+                  >
+                    <ArrowRightLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only text-[11px]">Move</span>
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 px-2 text-xs gap-1 opacity-70 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsMoveMenuOpen(!isMoveMenuOpen);
+                    }}
+                    aria-expanded={isMoveMenuOpen}
+                    aria-haspopup="menu"
+                    aria-label={`Move "${task.title}" to another column`}
+                    title="Move to another column"
+                  >
+                    <ArrowRightLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only text-[11px]">Move</span>
+                  </Button>
+                )}
 
-                {isMoveMenuOpen && (
+                {canEdit && isMoveMenuOpen && (
                   <div 
                     ref={menuRef}
                     role="menu"

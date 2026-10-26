@@ -1,25 +1,31 @@
-import { useState, useCallback } from 'react';
-import { db } from '../lib/db';
+import { useState, useCallback, useEffect } from 'react';
+import { db, onDbUpdate } from '../lib/db';
 import { Project, Task, ActivityEvent } from '../types';
 import { useAuth } from './useAuth';
 
 export const useProject = (projectId: string) => {
   const { user } = useAuth();
-  const [project, setProject] = useState<Project | null>(db.getProject(projectId) || null);
-  const [tasks, setTasks] = useState<Task[]>(db.getTasks(projectId));
+  const [project, setProject] = useState<Project | null>(() => db.getProject(projectId) || null);
+  const [tasks, setTasks] = useState<Task[]>(() => db.getTasks(projectId));
 
   const refresh = useCallback(() => {
     setProject(db.getProject(projectId) || null);
     setTasks(db.getTasks(projectId));
   }, [projectId]);
 
+  useEffect(() => {
+    refresh();
+    return onDbUpdate(refresh);
+  }, [projectId, refresh]);
+
   const addTask = (title: string, columnId: string) => {
     if (!user) return;
+    const currentTasks = db.getTasks(projectId);
     const newTask: Task = {
       id: crypto.randomUUID(),
       projectId,
       columnId,
-      order: tasks.filter(t => t.columnId === columnId).length,
+      order: currentTasks.filter(t => t.columnId === columnId).length,
       title,
       description: '',
       priority: 'medium',

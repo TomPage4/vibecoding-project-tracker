@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useParams, useSearchParams, Navigate } from 'react-router-dom';
 import { 
   DndContext, 
@@ -13,28 +13,35 @@ import {
   DragEndEvent,
   defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
-import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { 
+  SortableContext, 
+  horizontalListSortingStrategy, 
+  arrayMove, 
+  sortableKeyboardCoordinates 
+} from '@dnd-kit/sortable';
 import { useProject } from '../hooks/useProject';
 import { useAuth } from '../hooks/useAuth';
 import { permissions } from '../lib/permissions';
 import { db } from '../lib/db';
 import { announce } from '../lib/announcer';
+import { toast } from '../components/ui/Toast';
 import { ProjectSubNav } from '../components/layout/ProjectSubNav';
 import { ColumnContainer } from '../components/board/ColumnContainer';
 import { TaskCard } from '../components/board/TaskCard';
 import { Task, Column } from '../types';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
-import { Plus, Search, Filter, X } from 'lucide-react';
+import { Plus, Search, Filter, X, AlertCircle } from 'lucide-react';
 import { Input } from '../components/ui/Input';
 
 export const BoardPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { project, tasks, moveTask, refresh } = useProject(id!);
+  const { project, tasks, moveTask, addTask, refresh } = useProject(id!);
   
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [activeColumn, setActiveColumn] = useState<Column | null>(null);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
   // Column management modal states
@@ -44,6 +51,9 @@ export const BoardPage: React.FC = () => {
 
   const [columnToDelete, setColumnToDelete] = useState<Column | null>(null);
   const [migrateTargetColId, setMigrateTargetColId] = useState('');
+
+  const handleCloseAddColumn = useCallback(() => setIsAddColumnOpen(false), []);
+  const handleCloseDeleteColumn = useCallback(() => setColumnToDelete(null), []);
 
   // Read filters from URL query string
   const searchQuery = searchParams.get('q') || '';
@@ -93,16 +103,31 @@ export const BoardPage: React.FC = () => {
 
   if (!project) return <Navigate to="/dashboard" replace />;
 
+  const canEditTask = user ? permissions.canEditTask(project, user.id) : false;
   const canManage = user ? permissions.canManageProject(project, user.id) : false;
+  const isViewer = user ? permissions.isViewer(project, user.id) : false;
+
+  const sortedColumns = [...project.columns].sort((a, b) => a.order - b.order);
 
   // DND Handlers
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
+    const activeData = active.data.current;
+
+    if (activeData?.type === 'Column') {
+      if (!canManage) return;
+      const col = project.columns.find(c => c.id === active.id);
+      if (col) setActiveColumn(col);
+      return;
+    }
+
+    if (!canEditTask) return;
     const task = tasks.find(t => t.id === active.id);
     if (task) setActiveTask(task);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
+    if (!canEditTask) return;
     const { active, over } = event;
     if (!over) return;
 
@@ -111,10 +136,10 @@ export const BoardPage: React.FC = () => {
     if (activeId === overId) return;
 
     const isActiveATask = active.data.current?.type === 'Task';
+    if (!isActiveATask) return;
+
     const isOverATask = over.data.current?.type === 'Task';
     const isOverAColumn = over.data.current?.type === 'Column';
-
-    if (!isActiveATask) return;
 
     if (isOverATask) {
       const currentActive = tasks.find(t => t.id === activeId);
@@ -134,14 +159,46 @@ export const BoardPage: React.FC = () => {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over) {
-      setActiveTask(null);
-      return;
-    }
+    setActiveTask(null);
+    setActiveColumn(null);
+
+    if (!over) return;
 
     const activeId = active.id;
     const overId = over.id;
 
+    const isActiveAColumn = active.data.current?.type === 'Column';
+
+    // Handle column reordering
+    if (isActiveAColumn) {
+      if (!canManage) return;
+      const targetColId = over.data.current?.type === 'Column'
+        ? String(over.id)
+        : tasks.find(t => t.id === over.id)?.columnId;
+
+      if (targetColId && targetColId !== activeId) {
+        const currentSorted = [...project.columns].sort((a, b) => a.order - b.order);
+        const oldIndex = currentSorted.findIndex(c => c.id === activeId);
+        const newIndex = currentSorted.findIndex(c => c.id === targetColId);
+
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          const reordered = arrayMove(currentSorted, oldIndex, newIndex).map((col, idx) => ({
+            ...col,
+            order: idx
+          }));
+          db.saveProject({ ...project, columns: reordered });
+          refresh();
+          const movedCol = currentSorted[oldIndex];
+          toast.info(`Column "${movedCol.name}" moved to position ${newIndex + 1}`);
+          announce(`Column "${movedCol.name}" moved to position ${newIndex + 1}`);
+        }
+      }
+      return;
+    }
+
+    if (!canEditTask) return;
+
+    // Handle task reordering
     const isActiveATask = active.data.current?.type === 'Task';
     const isOverATask = over.data.current?.type === 'Task';
 
@@ -162,20 +219,36 @@ export const BoardPage: React.FC = () => {
           newOrder.forEach((t, i) => {
             moveTask(t.id, t.columnId, i);
           });
+          const col = project.columns.find(c => c.id === currentActive.columnId);
+          toast.info(`Task reordered in ${col?.name || 'column'}`);
         }
       }
     }
-
-    setActiveTask(null);
   };
 
   const handleDirectMoveTask = (taskId: string, targetColId: string) => {
+    if (!canEditTask) {
+      toast.warning('You don\'t have permissions to move tasks');
+      return;
+    }
     const targetCol = project.columns.find(c => c.id === targetColId);
     const task = tasks.find(t => t.id === taskId);
     if (!targetCol || !task) return;
     const colTasks = tasks.filter(t => t.columnId === targetColId);
     moveTask(taskId, targetColId, colTasks.length);
+    toast.info(`Moved "${task.title}" to ${targetCol.name}`);
     announce(`Task "${task.title}" moved to ${targetCol.name}`);
+  };
+
+  const handleQuickAddTask = (title: string, columnId: string) => {
+    if (!canEditTask) {
+      toast.warning('You don\'t have permissions to add tasks');
+      return;
+    }
+    addTask(title, columnId);
+    const col = project.columns.find(c => c.id === columnId);
+    toast.success(`Task "${title}" created`);
+    announce(`Task "${title}" created in ${col?.name || 'column'}`);
   };
 
   // Column management actions
@@ -195,6 +268,8 @@ export const BoardPage: React.FC = () => {
       columns: [...project.columns, newCol],
     });
     refresh();
+    toast.success(`Column "${newCol.name}" created`);
+    announce(`Column "${newCol.name}" created`);
     setNewColName('');
     setIsAddColumnOpen(false);
   };
@@ -208,6 +283,7 @@ export const BoardPage: React.FC = () => {
     }
     db.saveProject({ ...project, columns: cols });
     refresh();
+    toast.success('Column updated');
   };
 
   const handleMoveColumn = (colId: string, direction: 'left' | 'right') => {
@@ -225,6 +301,8 @@ export const BoardPage: React.FC = () => {
 
     db.saveProject({ ...project, columns: sorted });
     refresh();
+    toast.info(`Column "${sorted[idx].name}" moved ${direction}`);
+    announce(`Column "${sorted[idx].name}" moved ${direction}`);
   };
 
   const handleDeleteColumnRequest = (col: Column) => {
@@ -248,6 +326,8 @@ export const BoardPage: React.FC = () => {
       const cols = project.columns.filter(c => c.id !== col.id);
       db.saveProject({ ...project, columns: cols });
       refresh();
+      toast.info(`Column "${col.name}" deleted`);
+      announce(`Column "${col.name}" deleted`);
     }
   };
 
@@ -260,6 +340,8 @@ export const BoardPage: React.FC = () => {
     const cols = project.columns.filter(c => c.id !== columnToDelete.id);
     db.saveProject({ ...project, columns: cols });
     refresh();
+    toast.info(`Column "${columnToDelete.name}" deleted and tasks migrated`);
+    announce(`Column "${columnToDelete.name}" deleted and tasks migrated`);
     setColumnToDelete(null);
   };
 
@@ -272,12 +354,22 @@ export const BoardPage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{project.name} Board</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Drag cards or use each card's "Move" menu for full keyboard navigation.
+            Drag cards or columns, or use each card's "Move" menu for keyboard navigation.
           </p>
         </div>
       </div>
 
       <ProjectSubNav />
+
+      {/* Viewer mode notification banner */}
+      {isViewer && (
+        <div className="flex items-center gap-2 p-2.5 px-3 mb-3 bg-muted/60 border rounded-lg text-xs text-muted-foreground">
+          <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" aria-hidden="true" />
+          <span>
+            <strong>Limited Access:</strong> You don't have permission to move or add tasks, and reordering columns is disabled.
+          </span>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col gap-3 mb-4">
@@ -306,7 +398,7 @@ export const BoardPage: React.FC = () => {
           {hasActiveFilters && (
             <Button 
               variant="ghost" 
-              size="sm"
+              size="sm" 
               className="gap-1.5 h-9 text-xs" 
               onClick={clearAllFilters}
             >
@@ -389,67 +481,89 @@ export const BoardPage: React.FC = () => {
         )}
       </div>
 
-      {/* Kanban Columns with generous top padding & full width */}
+      {/* Kanban Columns with horizontal sorting */}
       <div className="flex-1 overflow-x-auto pt-3 pb-8">
-        <div className="flex gap-6 items-start min-w-max pb-2">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-          >
-            {[...project.columns].sort((a, b) => a.order - b.order).map(column => (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex gap-6 items-start min-w-max pb-2">
+            <SortableContext 
+              items={sortedColumns.map(c => c.id)} 
+              strategy={horizontalListSortingStrategy}
+            >
+              {sortedColumns.map(column => (
+                <ColumnContainer
+                  key={column.id}
+                  column={column}
+                  allColumns={project.columns}
+                  tasks={filteredTasks.filter(t => t.columnId === column.id).sort((a, b) => a.order - b.order)}
+                  projectId={project.id}
+                  onMoveTask={handleDirectMoveTask}
+                  onAddTask={handleQuickAddTask}
+                  onUpdateColumn={handleUpdateColumn}
+                  onDeleteColumn={handleDeleteColumnRequest}
+                  onMoveColumn={handleMoveColumn}
+                  canManage={canManage}
+                  canEdit={canEditTask}
+                />
+              ))}
+            </SortableContext>
+            
+            {canManage ? (
+              <Button 
+                variant="outline" 
+                className="h-12 w-80 justify-start border-dashed shrink-0"
+                onClick={() => setIsAddColumnOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add Column
+              </Button>
+            ) : (
+              <div className="h-12 w-80 flex items-center justify-center border border-dashed rounded-lg text-xs text-muted-foreground italic shrink-0 px-4 text-center">
+                You don't have permission to add columns
+              </div>
+            )}
+          </div>
+
+          <DragOverlay dropAnimation={{
+            sideEffects: defaultDropAnimationSideEffects({
+              styles: {
+                active: {
+                  opacity: '0.5',
+                },
+              },
+            }),
+          }}>
+            {activeColumn && (
               <ColumnContainer
-                key={column.id}
-                column={column}
+                column={activeColumn}
                 allColumns={project.columns}
-                tasks={filteredTasks.filter(t => t.columnId === column.id).sort((a, b) => a.order - b.order)}
+                tasks={filteredTasks.filter(t => t.columnId === activeColumn.id).sort((a, b) => a.order - b.order)}
                 projectId={project.id}
                 onMoveTask={handleDirectMoveTask}
-                onUpdateColumn={handleUpdateColumn}
-                onDeleteColumn={handleDeleteColumnRequest}
-                onMoveColumn={handleMoveColumn}
-                canManage={canManage}
+                canManage={false}
+                isOverlay
               />
-            ))}
-            
-            <DragOverlay dropAnimation={{
-              sideEffects: defaultDropAnimationSideEffects({
-                styles: {
-                  active: {
-                    opacity: '0.5',
-                  },
-                },
-              }),
-            }}>
-              {activeTask && (
-                <TaskCard 
-                  task={activeTask} 
-                  columns={project.columns}
-                  isOverlay 
-                />
-              )}
-            </DragOverlay>
-          </DndContext>
-          
-          {canManage && (
-            <Button 
-              variant="outline" 
-              className="h-12 w-80 justify-start border-dashed shrink-0"
-              onClick={() => setIsAddColumnOpen(true)}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Column
-            </Button>
-          )}
-        </div>
+            )}
+            {activeTask && (
+              <TaskCard 
+                task={activeTask} 
+                columns={project.columns}
+                isOverlay 
+              />
+            )}
+          </DragOverlay>
+        </DndContext>
       </div>
 
       {/* Add Column Modal */}
       {isAddColumnOpen && (
         <Modal
           isOpen={true}
-          onClose={() => setIsAddColumnOpen(false)}
+          onClose={handleCloseAddColumn}
           title="Add Board Column"
         >
           <form onSubmit={handleCreateColumn} className="space-y-4">
@@ -477,7 +591,7 @@ export const BoardPage: React.FC = () => {
               </select>
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="ghost" type="button" onClick={() => setIsAddColumnOpen(false)}>Cancel</Button>
+              <Button variant="ghost" type="button" onClick={handleCloseAddColumn}>Cancel</Button>
               <Button type="submit">Create Column</Button>
             </div>
           </form>
@@ -488,7 +602,7 @@ export const BoardPage: React.FC = () => {
       {columnToDelete && (
         <Modal
           isOpen={true}
-          onClose={() => setColumnToDelete(null)}
+          onClose={handleCloseDeleteColumn}
           title={`Delete Column: ${columnToDelete.name}`}
         >
           <div className="space-y-4">
@@ -511,7 +625,7 @@ export const BoardPage: React.FC = () => {
               </select>
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="ghost" onClick={() => setColumnToDelete(null)}>Cancel</Button>
+              <Button variant="ghost" onClick={handleCloseDeleteColumn}>Cancel</Button>
               <Button variant="destructive" onClick={confirmDeleteColumn}>Migrate Tasks & Delete</Button>
             </div>
           </div>

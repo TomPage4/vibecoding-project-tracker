@@ -4,13 +4,17 @@ import {
   ArrowLeft, 
   Calendar, 
   Trash2,
-  Plus
+  Plus,
+  AlertCircle
 } from 'lucide-react';
 import { db } from '../lib/db';
+import { useAuth } from '../hooks/useAuth';
+import { permissions } from '../lib/permissions';
 import { ProjectSubNav } from '../components/layout/ProjectSubNav';
 import { Button } from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { toast } from '../components/ui/Toast';
 import { TaskCard } from '../components/board/TaskCard';
 import { dateUtils } from '../lib/dates';
 import { cn } from '../lib/utils';
@@ -20,6 +24,7 @@ import remarkGfm from 'remark-gfm';
 export const MilestoneDetailPage: React.FC = () => {
   const { id: projectId, milestoneId } = useParams<{ id: string; milestoneId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const project = db.getProject(projectId!);
   const milestone = db.getMilestone(milestoneId!);
@@ -28,6 +33,8 @@ export const MilestoneDetailPage: React.FC = () => {
   const refresh = () => setTick(t => t + 1);
 
   if (!project || !milestone) return <Navigate to={`/projects/${projectId}/milestones`} replace />;
+
+  const canManage = user ? permissions.canManageMilestones(project, user.id) : false;
 
   const tasks = db.getTasks(projectId).filter(t => t.milestoneId === milestone.id);
   const unassignedTasks = db.getTasks(projectId).filter(t => !t.milestoneId);
@@ -45,16 +52,20 @@ export const MilestoneDetailPage: React.FC = () => {
   const [showAddTasks, setShowAddTasks] = useState(false);
 
   const handleDelete = () => {
+    if (!canManage) return;
     if (confirm('Are you sure you want to delete this milestone? Associated tasks will be detached but not deleted.')) {
       db.deleteMilestone(milestone.id);
+      toast.info('Milestone deleted');
       navigate(`/projects/${projectId}/milestones`);
     }
   };
 
   const handleAddTask = (taskId: string) => {
+    if (!canManage) return;
     const task = db.getTask(taskId);
     if (task) {
       db.saveTask({ ...task, milestoneId: milestone.id });
+      toast.success(`Task attached to milestone`);
       refresh();
     }
   };
@@ -81,12 +92,30 @@ export const MilestoneDetailPage: React.FC = () => {
             )}
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={handleDelete} aria-label="Delete milestone">
-          <Trash2 className="h-5 w-5" />
-        </Button>
+        {canManage ? (
+          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={handleDelete} aria-label="Delete milestone" title="Delete milestone">
+            <Trash2 className="h-5 w-5" />
+          </Button>
+        ) : (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground italic">
+            <Button variant="ghost" size="icon" disabled className="opacity-40 cursor-not-allowed" aria-label="Delete milestone (disabled)" title="You don't have permission to delete milestones.">
+              <Trash2 className="h-5 w-5" />
+            </Button>
+            <span>You don't have permission to delete milestones</span>
+          </div>
+        )}
       </div>
 
       <ProjectSubNav />
+
+      {!canManage && (
+        <div className="flex items-center gap-2 p-2.5 px-3 bg-muted/60 border rounded-lg text-xs text-muted-foreground">
+          <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" aria-hidden="true" />
+          <span>
+            <strong>Limited Access:</strong> You don't have permission to assign tasks and delte milestones.
+          </span>
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-2">
@@ -161,14 +190,25 @@ export const MilestoneDetailPage: React.FC = () => {
       </div>
 
       <div className="space-y-4 pt-4">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap justify-between items-center gap-3">
           <h2 className="text-xl font-bold">Milestone Tasks</h2>
-          <Button variant="outline" size="sm" onClick={() => setShowAddTasks(!showAddTasks)}>
-            <Plus className="h-4 w-4 mr-2" /> Add Existing Tasks
-          </Button>
+          {canManage ? (
+            <Button variant="outline" size="sm" onClick={() => setShowAddTasks(!showAddTasks)}>
+              <Plus className="h-4 w-4 mr-2" /> Add Existing Tasks
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled className="opacity-50 cursor-not-allowed">
+                <Plus className="h-4 w-4 mr-2" /> Add Existing Tasks
+              </Button>
+              <span className="text-xs text-muted-foreground italic">
+                You don't have permissiont o assign tasks to milestones
+              </span>
+            </div>
+          )}
         </div>
 
-        {showAddTasks && (
+        {showAddTasks && canManage && (
           <Card className="bg-muted/30">
             <CardHeader className="py-4">
               <CardTitle className="text-sm">Available Tasks to Assign</CardTitle>
@@ -201,7 +241,7 @@ export const MilestoneDetailPage: React.FC = () => {
                   <span className="text-[10px] bg-secondary px-1.5 rounded-full">{columnTasks.length}</span>
                 </div>
                 {columnTasks.map(t => (
-                  <TaskCard key={t.id} task={t} columns={project.columns} />
+                  <TaskCard key={t.id} task={t} columns={project.columns} canEdit={false} />
                 ))}
               </div>
             );

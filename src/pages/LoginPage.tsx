@@ -5,6 +5,7 @@ import { loadDemoData } from '../lib/seed';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
+import { toast } from '../components/ui/Toast';
 import { Layout, Sparkles } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -38,6 +39,7 @@ export const LoginPage: React.FC = () => {
     try {
       await loadDemoData();
       await login('alex@demo.test', 'demo1234');
+      toast.success('Demo data loaded! Welcome, Alex.');
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
       setError(err.message || 'Failed to load demo data');

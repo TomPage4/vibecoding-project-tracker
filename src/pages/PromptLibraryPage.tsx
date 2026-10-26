@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { dateUtils } from '../lib/dates';
 import { PromptEntry } from '../types';
+import { toast } from '../components/ui/Toast';
 
 export const PromptLibraryPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -61,6 +62,7 @@ export const PromptLibraryPage: React.FC = () => {
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
+    toast.success('Prompt copied to clipboard');
     setTimeout(() => setCopiedId(null), 2000);
   };
 

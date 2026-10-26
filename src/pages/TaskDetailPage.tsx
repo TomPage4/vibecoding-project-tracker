@@ -17,6 +17,7 @@ import { useProject } from '../hooks/useProject';
 import { permissions } from '../lib/permissions';
 import { contextBuilder } from '../lib/contextBuilder';
 import { announce } from '../lib/announcer';
+import { toast } from '../components/ui/Toast';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { TaskRequirements } from '../components/task/TaskRequirements';
@@ -51,6 +52,7 @@ export const TaskDetailPage: React.FC = () => {
     if (!canEdit) return;
     if (confirm('Are you sure you want to delete this task? This will remove all attached prompts, errors, comments, and activity.')) {
       deleteTask(task.id);
+      toast.info(`Task "${task.title}" deleted`);
       announce(`Task "${task.title}" deleted`);
       onClose();
     }
@@ -62,6 +64,7 @@ export const TaskDetailPage: React.FC = () => {
 
     navigator.clipboard.writeText(content);
     setCopiedPromptContext(true);
+    toast.success('AI prompt context copied to clipboard!');
     announce('Task copied as AI prompt context to clipboard');
     setTimeout(() => setCopiedPromptContext(false), 2500);
   };
@@ -105,12 +108,6 @@ export const TaskDetailPage: React.FC = () => {
                 <Trash2 className="h-4 w-4" /> Delete Task
               </Button>
             )}
-
-            {!canEdit && (
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                Viewer mode (read-only)
-              </span>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -129,6 +126,15 @@ export const TaskDetailPage: React.FC = () => {
         </div>
 
         {/* Sub-tabs */}
+        {!canEdit && (
+          <div className="flex items-center gap-2 p-2.5 px-3 mb-4 bg-muted/60 border rounded-lg text-xs text-muted-foreground">
+            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" aria-hidden="true" />
+            <span>
+              <strong>Limited Access:</strong> You don't have permission to edit details, requirements, notes, prompts, errors, and add comments.
+            </span>
+          </div>
+        )}
+
         <div className="flex gap-1 border-b mb-6 overflow-x-auto pb-px" role="tablist">
           {tabs.map(tab => (
             <button
@@ -248,6 +254,7 @@ export const TaskDetailPage: React.FC = () => {
           {activeTab === 'requirements' && (
             <TaskRequirements 
               requirements={task.requirements} 
+              disabled={!canEdit}
               onUpdate={(reqs) => handleUpdate({ requirements: reqs })} 
             />
           )}
@@ -276,7 +283,7 @@ export const TaskDetailPage: React.FC = () => {
           )}
 
           {activeTab === 'errors' && (
-            <TaskErrors taskId={task.id} />
+            <TaskErrors taskId={task.id} disabled={!canEdit} />
           )}
 
           {activeTab === 'activity' && (
@@ -286,7 +293,7 @@ export const TaskDetailPage: React.FC = () => {
 
         {/* Comments Section (available for all projects, especially team projects) */}
         <div className="border-t mt-6 pt-6">
-          <TaskComments taskId={task.id} />
+          <TaskComments taskId={task.id} disabled={!canEdit} />
         </div>
       </div>
     </Modal>

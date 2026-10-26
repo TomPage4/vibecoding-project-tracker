@@ -1,19 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { ToolError } from '../../types';
-import { db } from '../../lib/db';
+import { db, onDbUpdate } from '../../lib/db';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 import { dateUtils } from '../../lib/dates';
 import { cn } from '../../lib/utils';
+import { announce } from '../../lib/announcer';
+import { toast } from '../ui/Toast';
 
 interface TaskErrorsProps {
   taskId: string;
+  disabled?: boolean;
 }
 
-export const TaskErrors: React.FC<TaskErrorsProps> = ({ taskId }) => {
+export const TaskErrors: React.FC<TaskErrorsProps> = ({ taskId, disabled = false }) => {
   const { user } = useAuth();
   const [isAdding, setIsAdding] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -24,11 +27,21 @@ export const TaskErrors: React.FC<TaskErrorsProps> = ({ taskId }) => {
     description: '',
   });
 
-  const errors = db.getErrors(taskId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const [errors, setErrors] = useState<ToolError[]>(() =>
+    db.getErrors(taskId).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  );
+
+  useEffect(() => {
+    const update = () => {
+      setErrors(db.getErrors(taskId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+    };
+    update();
+    return onDbUpdate(update);
+  }, [taskId]);
 
   const handleAddError = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || disabled) return;
 
     const newError: ToolError = {
       id: crypto.randomUUID(),
@@ -53,30 +66,57 @@ export const TaskErrors: React.FC<TaskErrorsProps> = ({ taskId }) => {
       createdAt: new Date().toISOString()
     });
 
+    setErrors(prev => [newError, ...prev.filter(e => e.id !== newError.id)]);
+    toast.error(`Tool error logged (${newError.tool})`);
+    announce(`Tool error logged for ${newError.tool}`);
     setFormData({ tool: '', errorText: '', description: '' });
     setIsAdding(false);
+    setExpandedId(newError.id);
   };
 
   const handleToggleResolved = (error: ToolError) => {
-    db.saveError({ ...error, resolved: !error.resolved });
+    if (disabled) return;
+    const nextResolved = !error.resolved;
+    const updated: ToolError = { ...error, resolved: nextResolved };
+    db.saveError(updated);
+    setErrors(prev => prev.map(e => e.id === error.id ? updated : e));
+    if (nextResolved) {
+      toast.success(`Error for ${error.tool} marked as resolved`);
+      announce(`Error for ${error.tool} marked as resolved`);
+    } else {
+      toast.info(`Error for ${error.tool} marked as unresolved`);
+      announce(`Error for ${error.tool} marked as unresolved`);
+    }
   };
 
   const handleUpdateResolution = (error: ToolError, resolution: string) => {
-    db.saveError({ ...error, resolution });
+    if (disabled) return;
+    const updated: ToolError = { ...error, resolution };
+    db.saveError(updated);
+    setErrors(prev => prev.map(e => e.id === error.id ? updated : e));
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-2">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Tool Errors</h3>
-        {!isAdding && (
+        {disabled ? (
+          <div className="flex items-center gap-2">
+            <Button disabled size="sm" variant="outline" className="gap-1 opacity-50 cursor-not-allowed">
+              <Plus className="h-4 w-4" /> Log Error
+            </Button>
+            <span className="text-xs text-muted-foreground italic">
+              You don't have permission to log or resolve errors
+            </span>
+          </div>
+        ) : !isAdding ? (
           <Button onClick={() => setIsAdding(true)} size="sm" variant="destructive" className="gap-1">
             <Plus className="h-4 w-4" /> Log Error
           </Button>
-        )}
+        ) : null}
       </div>
 
-      {isAdding && (
+      {isAdding && !disabled && (
         <form onSubmit={handleAddError} className="space-y-4 border border-destructive/20 rounded-lg p-4 bg-destructive/5">
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Tool</label>
@@ -167,20 +207,28 @@ export const TaskErrors: React.FC<TaskErrorsProps> = ({ taskId }) => {
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold uppercase text-muted-foreground">Resolution</label>
                       <button 
+                        type="button"
+                        disabled={disabled}
                         onClick={() => handleToggleResolved(err)}
                         className={cn(
                           "text-xs font-medium px-2 py-1 rounded transition-colors",
-                          err.resolved ? "bg-emerald-500 text-white" : "bg-secondary hover:bg-secondary/80"
+                          err.resolved ? "bg-emerald-500 text-white" : "bg-secondary hover:bg-secondary/80",
+                          disabled && "opacity-50 cursor-not-allowed hover:bg-secondary"
                         )}
+                        title={disabled ? "You don't have permission to change error status" : undefined}
                       >
                         {err.resolved ? 'Mark as Unresolved' : 'Mark as Resolved'}
                       </button>
                     </div>
                     <textarea
-                      className="flex h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      disabled={disabled}
+                      className={cn(
+                        "flex h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
+                        disabled && "opacity-60 cursor-not-allowed bg-muted/30"
+                      )}
                       value={err.resolution}
                       onChange={(e) => handleUpdateResolution(err, e.target.value)}
-                      placeholder="How was this fixed?"
+                      placeholder={disabled ? "You don't have permission to edit resolution notes" : "How was this fixed?"}
                     />
                   </div>
                 </div>

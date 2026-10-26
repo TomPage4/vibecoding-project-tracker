@@ -7,12 +7,14 @@ import { db } from '../../lib/db';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/Button';
 import { dateUtils } from '../../lib/dates';
+import { cn } from '../../lib/utils';
 
 interface TaskCommentsProps {
   taskId: string;
+  disabled?: boolean;
 }
 
-export const TaskComments: React.FC<TaskCommentsProps> = ({ taskId }) => {
+export const TaskComments: React.FC<TaskCommentsProps> = ({ taskId, disabled = false }) => {
   const { user } = useAuth();
   const [newComment, setNewComment] = useState('');
   
@@ -20,7 +22,7 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({ taskId }) => {
 
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !newComment.trim()) return;
+    if (!user || disabled || !newComment.trim()) return;
 
     const comment: Comment = {
       id: crypto.randomUUID(),
@@ -68,13 +70,24 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({ taskId }) => {
 
       <form onSubmit={handleAddComment} className="flex flex-col gap-2">
         <textarea
-          className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-1 ring-primary"
-          placeholder="Add a comment... (Markdown supported)"
+          disabled={disabled}
+          className={cn(
+            "flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-1 ring-primary",
+            disabled && "opacity-60 cursor-not-allowed bg-muted/30"
+          )}
+          placeholder={disabled ? "You don't have permission to add comments" : "Add a comment... (Markdown supported)"}
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
         />
-        <div className="flex justify-end">
-          <Button type="submit" size="sm" className="gap-2" disabled={!newComment.trim()}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {disabled ? (
+            <span className="text-xs text-muted-foreground italic">
+              You don't have permission to add comments.
+            </span>
+          ) : (
+            <span />
+          )}
+          <Button type="submit" size="sm" className="gap-2" disabled={disabled || !newComment.trim()}>
             <Send className="h-3 w-3" /> Post Comment
           </Button>
         </div>

@@ -14,12 +14,26 @@ interface ModalProps {
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, className }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  const hasFocusedRef = useRef(false);
 
   useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      hasFocusedRef.current = false;
+      return;
+    }
+
+    previousActiveElement.current = document.activeElement as HTMLElement;
+    document.body.style.overflow = 'hidden';
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -47,16 +61,30 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
       }
     };
 
-    if (isOpen) {
-      previousActiveElement.current = document.activeElement as HTMLElement;
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
 
-      // Focus first focusable element inside modal
+    // Initial focus only when modal opens
+    if (!hasFocusedRef.current) {
+      hasFocusedRef.current = true;
       setTimeout(() => {
         if (modalRef.current) {
+          // Priority 1: element with explicit autofocus
+          const autoFocusEl = modalRef.current.querySelector<HTMLElement>('[autofocus], [data-autofocus]');
+          if (autoFocusEl) {
+            autoFocusEl.focus();
+            return;
+          }
+          // Priority 2: first input, textarea, or select field in form body
+          const firstInput = modalRef.current.querySelector<HTMLElement>(
+            'input:not([disabled]), textarea:not([disabled]), select:not([disabled])'
+          );
+          if (firstInput) {
+            firstInput.focus();
+            return;
+          }
+          // Priority 3: first focusable element
           const focusable = modalRef.current.querySelectorAll<HTMLElement>(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
           );
           if (focusable.length > 0) {
             focusable[0].focus();
@@ -73,7 +101,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         previousActiveElement.current.focus();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -84,7 +112,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     >
       <div 
         className="fixed inset-0" 
-        onClick={onClose} 
+        onClick={() => onCloseRef.current()} 
         aria-hidden="true"
       />
       <div
@@ -104,7 +132,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={onClose} 
+            onClick={() => onCloseRef.current()} 
             aria-label="Close modal (Escape)"
             title="Close modal"
           >

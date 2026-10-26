@@ -1,6 +1,19 @@
 import { AppData, User, Team, Project, Task, Milestone, PromptEntry, ToolError, Comment, ActivityEvent } from '../types';
 
 const STORAGE_KEY = 'ai-dev-tracker-data';
+const DB_UPDATE_EVENT = 'ai-tracker-db-update';
+
+export function onDbUpdate(listener: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  window.addEventListener(DB_UPDATE_EVENT, listener);
+  return () => window.removeEventListener(DB_UPDATE_EVENT, listener);
+}
+
+export function notifyDbUpdate(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(DB_UPDATE_EVENT));
+  }
+}
 
 const INITIAL_DATA: AppData = {
   users: [],
@@ -28,6 +41,7 @@ export const db = {
 
   saveData(data: AppData): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    notifyDbUpdate();
   },
 
   // Users

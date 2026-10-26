@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { db } from '../lib/db';
+import { useAuth } from '../hooks/useAuth';
+import { permissions } from '../lib/permissions';
 import { contextBuilder } from '../lib/contextBuilder';
 import { announce } from '../lib/announcer';
+import { toast } from '../components/ui/Toast';
 import { ProjectSubNav } from '../components/layout/ProjectSubNav';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Copy, Check, Sparkles, Eye, Code2 } from 'lucide-react';
+import { Copy, Check, Sparkles, Eye, Code2, AlertCircle } from 'lucide-react';
 import { ProjectContext } from '../types';
+import { cn } from '../lib/utils';
 
 export const ProjectContextPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const project = db.getProject(id!);
 
   const [context, setContext] = useState<ProjectContext>(() => {
@@ -33,7 +38,10 @@ export const ProjectContextPage: React.FC = () => {
 
   if (!project) return <Navigate to="/dashboard" replace />;
 
+  const canManage = user ? permissions.canManageContext(project, user.id) : false;
+
   const handleChange = (field: keyof ProjectContext, value: string) => {
+    if (!canManage) return;
     const updated = {
       ...context,
       [field]: value,
@@ -56,6 +64,7 @@ export const ProjectContextPage: React.FC = () => {
   const copyFullContext = () => {
     navigator.clipboard.writeText(fullMarkdown);
     setCopiedAll(true);
+    toast.success('Full AI session starter copied to clipboard');
     announce('Full AI session starter copied to clipboard');
     setTimeout(() => setCopiedAll(false), 2500);
   };
@@ -64,6 +73,7 @@ export const ProjectContextPage: React.FC = () => {
     const md = `## ${title}\n${value.trim()}`;
     navigator.clipboard.writeText(md);
     setCopiedSection(sectionKey);
+    toast.success(`${title} copied to clipboard`);
     announce(`${title} copied to clipboard`);
     setTimeout(() => setCopiedSection(null), 2000);
   };
@@ -112,6 +122,16 @@ export const ProjectContextPage: React.FC = () => {
 
       <ProjectSubNav />
 
+      {/* Viewer mode notification banner */}
+      {!canManage && (
+        <div className="flex items-center gap-2 p-3 bg-muted/60 border rounded-lg text-sm text-muted-foreground">
+          <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" aria-hidden="true" />
+          <span>
+            <strong>Limited Access:</strong> You don't have permission to edit project context.
+          </span>
+        </div>
+      )}
+
       {/* Copy Preview Panel */}
       {showPreview && (
         <Card className="border-primary/40 bg-accent/20 shadow-md">
@@ -158,14 +178,23 @@ export const ProjectContextPage: React.FC = () => {
                 {copiedSection === key ? 'Copied' : 'Copy Section'}
               </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-1.5">
               <textarea
-                className="flex min-h-[110px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring monospace"
-                placeholder={placeholder}
+                disabled={!canManage}
+                className={cn(
+                  "flex min-h-[110px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring monospace",
+                  !canManage && "opacity-60 cursor-not-allowed bg-muted/30"
+                )}
+                placeholder={!canManage ? "You don't have permission to edit project context." : placeholder}
                 value={context[key] || ''}
                 onChange={(e) => handleChange(key, e.target.value)}
                 aria-label={title}
               />
+              {!canManage && (
+                <p className="text-[11px] text-muted-foreground italic">
+                  You don't have permission to edit
+                </p>
+              )}
             </CardContent>
           </Card>
         ))}
