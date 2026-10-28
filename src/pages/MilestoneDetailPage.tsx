@@ -337,8 +337,11 @@ export const MilestoneDetailPage: React.FC = () => {
                   <p className="text-sm text-muted-foreground italic">No unassigned tasks found.</p>
                 ) : (
                   unassignedTasks.map(t => (
-                    <div key={t.id} className="flex items-center justify-between p-2 bg-background rounded border text-sm">
-                      <span className="truncate mr-4">{t.title}</span>
+                    <div key={t.id} className="flex items-center justify-between p-2 bg-background rounded border text-sm gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <StatusBadge taskType={t.type || 'feature'} />
+                        <span className="truncate">{t.title}</span>
+                      </div>
                       <Button size="sm" variant="ghost" onClick={() => handleAddTask(t.id)}>Add to Milestone</Button>
                     </div>
                   ))

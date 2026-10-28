@@ -26,6 +26,7 @@ import { db } from '../lib/db';
 import { announce } from '../lib/announcer';
 import { toast } from '../components/ui/Toast';
 import { ProjectSubNav } from '../components/layout/ProjectSubNav';
+import { AnchorBoard } from '../components/board/AnchorBoard';
 import { ColumnContainer } from '../components/board/ColumnContainer';
 import { TaskCard } from '../components/board/TaskCard';
 import { Task, Column } from '../types';
@@ -240,12 +241,17 @@ export const BoardPage: React.FC = () => {
     announce(`Task "${task.title}" moved to ${targetCol.name}`);
   };
 
-  const handleQuickAddTask = (title: string, columnId: string) => {
+  const handleQuickAddTask = (
+    title: string, 
+    columnId: string, 
+    type: 'bug' | 'feature' = 'feature', 
+    labels: string[] = []
+  ) => {
     if (!canEditTask) {
       toast.warning('You don\'t have permissions to add tasks');
       return;
     }
-    addTask(title, columnId);
+    addTask(title, columnId, type, labels);
     const col = project.columns.find(c => c.id === columnId);
     toast.success(`Task "${title}" created`);
     announce(`Task "${title}" created in ${col?.name || 'column'}`);
@@ -363,13 +369,18 @@ export const BoardPage: React.FC = () => {
 
       {/* Viewer mode notification banner */}
       {isViewer && (
-        <div className="flex items-center gap-2 p-2.5 px-3 mb-3 bg-muted/60 border rounded-lg text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 p-2.5 px-3 mb-4 bg-muted/60 border rounded-lg text-xs text-muted-foreground">
           <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" aria-hidden="true" />
           <span>
             <strong>Limited Access:</strong> You don't have permission to move or add tasks, and reordering columns is disabled.
           </span>
         </div>
       )}
+
+      {/* Anchor Board: Team deliverable links */}
+      <div className="mb-6">
+        <AnchorBoard project={project} onUpdateProject={refresh} />
+      </div>
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col gap-3 mb-4">
@@ -502,6 +513,7 @@ export const BoardPage: React.FC = () => {
                   allColumns={project.columns}
                   tasks={filteredTasks.filter(t => t.columnId === column.id).sort((a, b) => a.order - b.order)}
                   projectId={project.id}
+                  availableLabels={project.labels}
                   onMoveTask={handleDirectMoveTask}
                   onAddTask={handleQuickAddTask}
                   onUpdateColumn={handleUpdateColumn}

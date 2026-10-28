@@ -4,7 +4,8 @@ import {
   Routes,
   Route,
   Navigate,
-  useLocation
+  useLocation,
+  useParams
 } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ToastProvider } from './components/ui/Toast';
@@ -44,6 +45,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
+const ProjectRootRedirect: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/projects/${id}/board`} replace />;
+};
+
 const AppRoutes = () => {
   return (
     <Routes>
@@ -61,9 +67,10 @@ const AppRoutes = () => {
         <Route path="teams" element={<TeamsPage />} />
         <Route path="projects" element={<Navigate to="/dashboard" replace />} />
         <Route path="projects/new" element={<ProjectNewPage />} />
-        <Route path="projects/:id" element={<ProjectDashboardPage />} />
+        <Route path="projects/:id" element={<ProjectRootRedirect />} />
+        <Route path="projects/:id/dashboard" element={<ProjectDashboardPage />} />
         
-        {/* Kanban routes */}
+        {/* Kanban routes (default project view) */}
         <Route path="projects/:id/board" element={<BoardPage />} />
         <Route path="projects/:id/board/tasks/:taskId" element={<TaskDetailPage />} />
         <Route path="projects/:id/tasks/:taskId" element={<TaskDetailPage />} />

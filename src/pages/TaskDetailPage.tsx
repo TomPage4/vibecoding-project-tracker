@@ -26,6 +26,7 @@ import { TaskActivity } from '../components/task/TaskActivity';
 import { TaskPrompts } from '../components/task/TaskPrompts';
 import { TaskErrors } from '../components/task/TaskErrors';
 import { TaskComments } from '../components/task/TaskComments';
+import { LabelMultiSelect } from '../components/ui/LabelMultiSelect';
 import { cn } from '../lib/utils';
 
 export const TaskDetailPage: React.FC = () => {
@@ -191,10 +192,25 @@ export const TaskDetailPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Priority</label>
+                  <label htmlFor="task-type-select" className="text-sm font-medium">Type</label>
                   <select
+                    id="task-type-select"
+                    disabled={!canEdit}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 ring-primary disabled:opacity-60"
+                    value={task.type || 'feature'}
+                    onChange={(e) => handleUpdate({ type: e.target.value as 'bug' | 'feature' })}
+                  >
+                    <option value="feature">Feature</option>
+                    <option value="bug">Bug</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="task-priority-select" className="text-sm font-medium">Priority</label>
+                  <select
+                    id="task-priority-select"
                     disabled={!canEdit}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 ring-primary disabled:opacity-60"
                     value={task.priority}
@@ -207,8 +223,9 @@ export const TaskDetailPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Assignee</label>
+                  <label htmlFor="task-assignee-select" className="text-sm font-medium">Assignee</label>
                   <select
+                    id="task-assignee-select"
                     disabled={!canEdit}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 ring-primary disabled:opacity-60"
                     value={task.assigneeId || ''}
@@ -222,8 +239,9 @@ export const TaskDetailPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Milestone</label>
+                  <label htmlFor="task-milestone-select" className="text-sm font-medium">Milestone</label>
                   <select
+                    id="task-milestone-select"
                     disabled={!canEdit}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 ring-primary disabled:opacity-60"
                     value={task.milestoneId || ''}
@@ -235,6 +253,17 @@ export const TaskDetailPage: React.FC = () => {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Labels</label>
+                <LabelMultiSelect
+                  availableLabels={project.labels || []}
+                  selectedLabels={task.labels || []}
+                  onChange={(newLabels) => handleUpdate({ labels: newLabels })}
+                  disabled={!canEdit}
+                  placeholder="Assign labels..."
+                />
               </div>
 
               <div className="space-y-2">

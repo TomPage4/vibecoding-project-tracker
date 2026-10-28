@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, AlertCircle, Clock, ArrowDown } from 'lucide-react';
+import { Check, AlertCircle, Clock, ArrowDown, Bug, Star } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export type StatusBadgeVariant = 
@@ -13,11 +13,14 @@ export type StatusBadgeVariant =
   | 'neutral'
   | 'worked'
   | 'partial'
-  | 'failed';
+  | 'failed'
+  | 'bug'
+  | 'feature';
 
 interface StatusBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: StatusBadgeVariant;
   priority?: 'high' | 'medium' | 'low';
+  taskType?: 'bug' | 'feature';
   status?: string;
   isOverdue?: boolean;
   isCompleted?: boolean;
@@ -28,6 +31,7 @@ interface StatusBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 export const StatusBadge: React.FC<StatusBadgeProps> = ({
   variant,
   priority,
+  taskType,
   status,
   isOverdue,
   isCompleted,
@@ -42,7 +46,17 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   let defaultLabel = '';
   let defaultIcon: React.ReactNode = null;
 
-  if (priority) {
+  if (taskType) {
+    if (taskType === 'bug') {
+      effVariant = 'bug';
+      defaultLabel = 'Bug';
+      defaultIcon = <Bug className="h-3 w-3 shrink-0" aria-hidden="true" />;
+    } else {
+      effVariant = 'feature';
+      defaultLabel = 'Feature';
+      defaultIcon = <Star className="h-3 w-3 shrink-0" aria-hidden="true" />;
+    }
+  } else if (priority) {
     if (priority === 'high') {
       effVariant = 'high';
       defaultLabel = 'High';
@@ -77,6 +91,14 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   // Set default labels/icons based on explicit variant if not already set
   if (!defaultIcon) {
     switch (effVariant) {
+      case 'bug':
+        defaultLabel = 'Bug';
+        defaultIcon = <Bug className="h-3 w-3 shrink-0" aria-hidden="true" />;
+        break;
+      case 'feature':
+        defaultLabel = 'Feature';
+        defaultIcon = <Star className="h-3 w-3 shrink-0" aria-hidden="true" />;
+        break;
       case 'done':
       case 'worked':
         defaultLabel = effVariant === 'worked' ? 'Worked' : 'Done';
@@ -119,6 +141,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     open: 'bg-blue-700 text-white',
     low: 'bg-slate-700 text-white',
     neutral: 'bg-slate-700 text-white',
+    bug: 'bg-purple-700 text-white',
+    feature: 'bg-sky-700 text-white',
   };
 
   const displayText = label || (typeof children === 'string' ? children : defaultLabel);

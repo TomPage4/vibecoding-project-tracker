@@ -74,6 +74,8 @@ export interface Milestone {
   createdAt: string;
 }
 
+export type TaskType = 'bug' | 'feature';
+
 export interface Task {
   id: string;
   projectId: string;
@@ -82,6 +84,7 @@ export interface Task {
   title: string;
   description: string;
   priority: 'low' | 'medium' | 'high';
+  type?: TaskType;                 // task type: 'bug' or 'feature' (default: 'feature')
   assigneeId: string | null;       // a project member
   milestoneId: string | null;
   labels: string[];

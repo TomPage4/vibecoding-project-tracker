@@ -116,7 +116,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         onClick={handleCardClick}
         tabIndex={0}
         role="button"
-        aria-label={`${task.title}, priority ${priority.label}, column ${columns.find(c => c.id === task.columnId)?.name || ''}`}
+        aria-label={`${task.title}, type ${task.type || 'feature'}, priority ${priority.label}, column ${columns.find(c => c.id === task.columnId)?.name || ''}`}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             navigate(`/projects/${projectId || task.projectId}/tasks/${task.id}`);
@@ -197,6 +197,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
           {/* Badges / Chips */}
           <div className="flex flex-wrap gap-1.5 items-center">
+            {/* Task Type with icon and text */}
+            <StatusBadge taskType={task.type || 'feature'} />
+
             {/* Priority with icon and text */}
             <StatusBadge priority={task.priority} />
 

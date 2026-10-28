@@ -18,7 +18,12 @@ export const useProject = (projectId: string) => {
     return onDbUpdate(refresh);
   }, [projectId, refresh]);
 
-  const addTask = (title: string, columnId: string) => {
+  const addTask = (
+    title: string, 
+    columnId: string, 
+    type: 'bug' | 'feature' = 'feature', 
+    labels: string[] = []
+  ) => {
     if (!user) return;
     const currentTasks = db.getTasks(projectId);
     const newTask: Task = {
@@ -29,9 +34,10 @@ export const useProject = (projectId: string) => {
       title,
       description: '',
       priority: 'medium',
+      type: type || 'feature',
       assigneeId: null,
       milestoneId: null,
-      labels: [],
+      labels: labels || [],
       notes: '',
       requirements: [],
       aiContext: '',

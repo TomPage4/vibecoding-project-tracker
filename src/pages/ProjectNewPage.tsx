@@ -52,7 +52,7 @@ export const ProjectNewPage: React.FC = () => {
     };
 
     db.saveProject(project);
-    navigate(`/projects/${project.id}`);
+    navigate(`/projects/${project.id}/board`);
   };
 
   return (

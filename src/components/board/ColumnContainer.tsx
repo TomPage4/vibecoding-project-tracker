@@ -7,14 +7,16 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Button } from '../ui/Button';
 import { Plus, MoreVertical, GripVertical, ArrowLeft, ArrowRight, Trash2, Edit2 } from 'lucide-react';
 import { Input } from '../ui/Input';
+import { LabelMultiSelect } from '../ui/LabelMultiSelect';
 
 interface ColumnProps {
   column: Column;
   allColumns: Column[];
   tasks: Task[];
   projectId: string;
+  availableLabels?: string[];
   onMoveTask: (taskId: string, targetColId: string) => void;
-  onAddTask?: (title: string, columnId: string) => void;
+  onAddTask?: (title: string, columnId: string, type?: 'bug' | 'feature', labels?: string[]) => void;
   onUpdateColumn?: (columnId: string, updates: Partial<Column>) => void;
   onDeleteColumn?: (column: Column) => void;
   onMoveColumn?: (columnId: string, direction: 'left' | 'right') => void;
@@ -28,6 +30,7 @@ export const ColumnContainer: React.FC<ColumnProps> = ({
   allColumns, 
   tasks, 
   projectId: _projectId,
+  availableLabels = [],
   onMoveTask,
   onAddTask,
   onUpdateColumn,
@@ -39,6 +42,8 @@ export const ColumnContainer: React.FC<ColumnProps> = ({
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskType, setNewTaskType] = useState<'bug' | 'feature'>('feature');
+  const [newTaskLabels, setNewTaskLabels] = useState<string[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(column.name);
@@ -88,9 +93,11 @@ export const ColumnContainer: React.FC<ColumnProps> = ({
     e.preventDefault();
     if (!newTaskTitle.trim() || !canEdit) return;
     if (onAddTask) {
-      onAddTask(newTaskTitle.trim(), column.id);
+      onAddTask(newTaskTitle.trim(), column.id, newTaskType, newTaskLabels);
     }
     setNewTaskTitle('');
+    setNewTaskType('feature');
+    setNewTaskLabels([]);
     setIsAdding(false);
   };
 
@@ -261,7 +268,7 @@ export const ColumnContainer: React.FC<ColumnProps> = ({
               You don't have permission to add tasks
             </p>
           ) : isAdding ? (
-            <form onSubmit={handleAddTask} className="space-y-2">
+            <form onSubmit={handleAddTask} className="space-y-2.5">
               <Input
                 placeholder="Task title..."
                 value={newTaskTitle}
@@ -269,12 +276,56 @@ export const ColumnContainer: React.FC<ColumnProps> = ({
                 autoFocus
                 className="h-8 text-xs"
                 onKeyDown={(e) => {
-                  if (e.key === 'Escape') setIsAdding(false);
+                  if (e.key === 'Escape') {
+                    setIsAdding(false);
+                    setNewTaskTitle('');
+                    setNewTaskType('feature');
+                    setNewTaskLabels([]);
+                  }
                 }}
               />
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <label htmlFor={`task-type-${column.id}`} className="text-[11px] font-semibold text-muted-foreground uppercase">
+                    Type:
+                  </label>
+                  <select
+                    id={`task-type-${column.id}`}
+                    value={newTaskType}
+                    onChange={(e) => setNewTaskType(e.target.value as 'bug' | 'feature')}
+                    className="h-6 text-xs rounded border border-input bg-background px-1.5 py-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="feature">Feature</option>
+                    <option value="bug">Bug</option>
+                  </select>
+                </div>
+
+                {availableLabels.length > 0 && (
+                  <LabelMultiSelect
+                    compact
+                    availableLabels={availableLabels}
+                    selectedLabels={newTaskLabels}
+                    onChange={setNewTaskLabels}
+                    placeholder="Labels"
+                  />
+                )}
+              </div>
+              <div className="flex gap-2 pt-0.5">
                 <Button type="submit" size="sm" className="h-7 text-xs">Add</Button>
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setIsAdding(false)}>Cancel</Button>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 text-xs" 
+                  onClick={() => {
+                    setIsAdding(false);
+                    setNewTaskTitle('');
+                    setNewTaskType('feature');
+                    setNewTaskLabels([]);
+                  }}
+                >
+                  Cancel
+                </Button>
               </div>
             </form>
           ) : (

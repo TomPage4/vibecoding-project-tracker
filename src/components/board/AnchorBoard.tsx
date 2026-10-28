@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Anchor, 
   Pin, 
@@ -136,19 +136,27 @@ const AnchorDeliverableCard: React.FC<AnchorDeliverableCardProps> = ({
   onSave,
   onClear,
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(savedLink);
   const [error, setError] = useState('');
 
-  // Synchronize input value with project anchorLinks whenever changed (e.g. team member update or live update)
+  const inputRef = useRef<HTMLInputElement>(null);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Synchronize input value with savedLink whenever external/team updates occur
   useEffect(() => {
     setInputValue(savedLink);
     setError('');
+    // If link was cleared remotely, exit edit mode
+    if (!savedLink) {
+      setIsEditing(false);
+    }
   }, [savedLink]);
 
   const validateUrl = (url: string): { isValid: boolean; error: string; formattedUrl: string } => {
     const trimmed = url.trim();
     if (!trimmed) {
-      return { isValid: false, error: 'Link cannot be empty. Enter a URL or click Clear.', formattedUrl: '' };
+      return { isValid: false, error: 'Link cannot be empty. Enter a URL.', formattedUrl: '' };
     }
 
     const lower = trimmed.toLowerCase();
@@ -196,21 +204,46 @@ const AnchorDeliverableCard: React.FC<AnchorDeliverableCardProps> = ({
 
     setError('');
     onSave(validation.formattedUrl);
+    setIsEditing(false);
+    setTimeout(() => {
+      editButtonRef.current?.focus();
+    }, 0);
+  };
+
+  const handleStartEdit = () => {
+    if (!canEdit) return;
+    setIsEditing(true);
+    setInputValue(savedLink);
+    setError('');
+    setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 0);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setInputValue(savedLink);
+    setError('');
+    setTimeout(() => {
+      editButtonRef.current?.focus();
+    }, 0);
   };
 
   const handleClearClick = () => {
     if (!canEdit) return;
     setInputValue('');
     setError('');
+    setIsEditing(false);
     onClear();
   };
 
   const Icon = config.icon;
-  const isLinked = Boolean(savedLink);
+  const hasSavedLink = Boolean(savedLink);
 
   return (
     <div className="rounded-lg border bg-card p-4 transition-all shadow-sm flex flex-col justify-between gap-3">
-      {/* Header */}
+      {/* Card Header: Icon, Name, and Status Badge */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-md bg-primary/10 text-primary shrink-0" aria-hidden="true">
@@ -220,7 +253,7 @@ const AnchorDeliverableCard: React.FC<AnchorDeliverableCardProps> = ({
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <Pin className="h-3 w-3 text-muted-foreground rotate-45 shrink-0" aria-label="Pinned deliverable" />
-          {isLinked ? (
+          {hasSavedLink ? (
             <StatusBadge variant="done" label="Linked" />
           ) : (
             <StatusBadge variant="neutral" label="Not set" />
@@ -228,108 +261,179 @@ const AnchorDeliverableCard: React.FC<AnchorDeliverableCardProps> = ({
         </div>
       </div>
 
-      {/* Saved Clickable Link Display or Empty State */}
-      <div className="min-h-[44px] flex items-center">
-        {isLinked ? (
-          <div className="w-full rounded-md border bg-muted/20 p-2 flex items-center justify-between gap-2 overflow-hidden">
-            <a
-              href={savedLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-              aria-label={`Open ${config.name} link: ${savedLink} in new tab`}
-              title={savedLink}
-            >
-              <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              <span className="truncate">{savedLink}</span>
-            </a>
-            <a
-              href={savedLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] text-muted-foreground hover:text-foreground shrink-0 underline ml-1"
-            >
-              Open
-            </a>
+      {/* Body Area: Exactly ONE state at a time */}
+      <div className="min-h-[56px] flex flex-col justify-center">
+        {/* STATE 1: NO LINK */}
+        {!hasSavedLink && (
+          canEdit ? (
+            <form onSubmit={handleFormSubmit} className="space-y-1.5">
+              <label
+                htmlFor={`anchor-link-${config.id}`}
+                className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                {config.label}
+              </label>
+              <div className="flex gap-1.5 items-center">
+                <input
+                  id={`anchor-link-${config.id}`}
+                  type="url"
+                  placeholder="https://..."
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    if (error) setError('');
+                  }}
+                  className={cn(
+                    "flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    error && "border-destructive focus-visible:ring-destructive"
+                  )}
+                  aria-invalid={!!error}
+                  aria-describedby={error ? `error-${config.id}` : undefined}
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="h-8 px-2.5 text-xs shrink-0"
+                  disabled={!inputValue.trim()}
+                  aria-label={`Save ${config.name} link`}
+                >
+                  Save
+                </Button>
+              </div>
+
+              {error && (
+                <div
+                  id={`error-${config.id}`}
+                  role="alert"
+                  aria-live="polite"
+                  className="flex items-center gap-1 text-[11px] font-medium text-destructive mt-1"
+                >
+                  <AlertCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  <span>{error}</span>
+                </div>
+              )}
+            </form>
+          ) : (
+            <div className="space-y-1">
+              <span className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {config.label}
+              </span>
+              <div className="w-full rounded-md border border-dashed p-2 text-center bg-muted/10">
+                <p className="text-xs text-muted-foreground italic">No link added yet</p>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* STATE 2: LINK SAVED (not editing) */}
+        {hasSavedLink && !isEditing && (
+          <div className="space-y-1.5">
+            <span className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {config.label}
+            </span>
+            <div className="w-full rounded-md border bg-muted/20 p-2 flex items-center justify-between gap-2 overflow-hidden">
+              <a
+                href={savedLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded min-w-0"
+                aria-label={`Open ${config.name} link: ${savedLink} in new tab`}
+                title={savedLink}
+              >
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span className="truncate">{savedLink}</span>
+              </a>
+
+              {canEdit && (
+                <div className="flex items-center gap-1 shrink-0 ml-1">
+                  <Button
+                    ref={editButtonRef}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStartEdit}
+                    className="h-7 px-2 text-xs"
+                    aria-label={`Edit ${config.name} link`}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearClick}
+                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                    aria-label={`Clear ${config.name} link`}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        ) : (
-          <div className="w-full rounded-md border border-dashed p-2 text-center bg-muted/10">
-            <p className="text-xs text-muted-foreground italic">No link added yet</p>
-          </div>
+        )}
+
+        {/* STATE 3: EDIT MODE */}
+        {hasSavedLink && isEditing && (
+          <form onSubmit={handleFormSubmit} className="space-y-1.5">
+            <label
+              htmlFor={`anchor-link-${config.id}`}
+              className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
+              {config.label}
+            </label>
+            <div className="flex gap-1.5 items-center">
+              <input
+                ref={inputRef}
+                id={`anchor-link-${config.id}`}
+                type="url"
+                value={inputValue}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  if (error) setError('');
+                }}
+                className={cn(
+                  "flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  error && "border-destructive focus-visible:ring-destructive"
+                )}
+                aria-invalid={!!error}
+                aria-describedby={error ? `error-${config.id}` : undefined}
+              />
+              <Button
+                type="submit"
+                size="sm"
+                className="h-8 px-2.5 text-xs shrink-0"
+                disabled={!inputValue.trim()}
+                aria-label={`Save ${config.name} link`}
+              >
+                Save
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelEdit}
+                className="h-8 px-2 text-xs shrink-0"
+                aria-label={`Cancel editing ${config.name} link`}
+              >
+                Cancel
+              </Button>
+            </div>
+
+            {error && (
+              <div
+                id={`error-${config.id}`}
+                role="alert"
+                aria-live="polite"
+                className="flex items-center gap-1 text-[11px] font-medium text-destructive mt-1"
+              >
+                <AlertCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
+                <span>{error}</span>
+              </div>
+            )}
+          </form>
         )}
       </div>
-
-      {/* Exactly One Link Input Field with Visible Label */}
-      <form onSubmit={handleFormSubmit} className="space-y-1.5 pt-1 border-t">
-        <label
-          htmlFor={`anchor-link-${config.id}`}
-          className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-        >
-          {config.label}
-        </label>
-        <div className="flex gap-1.5 items-center">
-          <input
-            id={`anchor-link-${config.id}`}
-            type="url"
-            disabled={!canEdit}
-            placeholder={canEdit ? "https://..." : "Read-only for viewers"}
-            value={inputValue}
-            onChange={(e) => {
-              setInputValue(e.target.value);
-              if (error) setError('');
-            }}
-            className={cn(
-              "flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60",
-              error && "border-destructive focus-visible:ring-destructive"
-            )}
-            aria-invalid={!!error}
-            aria-describedby={error ? `error-${config.id}` : undefined}
-          />
-          {canEdit && (
-            <Button
-              type="submit"
-              size="sm"
-              className="h-8 px-2.5 text-xs shrink-0"
-              disabled={!inputValue.trim() || inputValue === savedLink}
-              aria-label={`Save ${config.name} link`}
-            >
-              Save
-            </Button>
-          )}
-          {canEdit && isLinked && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleClearClick}
-              className="h-8 px-2 text-xs text-destructive hover:text-destructive shrink-0"
-              aria-label={`Clear ${config.name} link`}
-              title={`Clear ${config.name} link`}
-            >
-              Clear
-            </Button>
-          )}
-        </div>
-
-        {/* Screen-reader live error notification */}
-        {error && (
-          <div
-            id={`error-${config.id}`}
-            role="alert"
-            aria-live="polite"
-            className="flex items-center gap-1 text-[11px] font-medium text-destructive mt-1"
-          >
-            <AlertCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {!canEdit && (
-          <p className="text-[10px] text-muted-foreground italic mt-0.5">
-            Viewers cannot edit anchor links
-          </p>
-        )}
-      </form>
     </div>
   );
 };

@@ -112,7 +112,7 @@ const ProjectCard: React.FC<{ project: any }> = ({ project }) => {
   }).length;
 
   return (
-    <Link to={`/projects/${project.id}`} className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+    <Link to={`/projects/${project.id}/board`} className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
       <Card className="h-full hover:border-primary/50 transition-all hover:shadow-sm">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">

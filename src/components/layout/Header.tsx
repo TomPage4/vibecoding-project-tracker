@@ -83,7 +83,7 @@ export const Header: React.FC = () => {
                           {soloProjects.map(p => (
                             <Link
                               key={p.id}
-                              to={`/projects/${p.id}`}
+                              to={`/projects/${p.id}/board`}
                               role="menuitem"
                               className={`flex items-center justify-between rounded px-2 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground ${currentProjectId === p.id ? 'bg-accent/60 font-semibold text-primary' : ''}`}
                               onClick={() => setIsProjectMenuOpen(false)}
@@ -100,7 +100,7 @@ export const Header: React.FC = () => {
                           {teamProjects.map(p => (
                             <Link
                               key={p.id}
-                              to={`/projects/${p.id}`}
+                              to={`/projects/${p.id}/board`}
                               role="menuitem"
                               className={`flex items-center justify-between rounded px-2 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground ${currentProjectId === p.id ? 'bg-accent/60 font-semibold text-primary' : ''}`}
                               onClick={() => setIsProjectMenuOpen(false)}

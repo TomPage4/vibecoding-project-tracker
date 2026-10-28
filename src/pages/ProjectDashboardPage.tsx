@@ -14,7 +14,6 @@ import { db } from '../lib/db';
 import { useAuth } from '../hooks/useAuth';
 import { useProject } from '../hooks/useProject';
 import { ProjectSubNav } from '../components/layout/ProjectSubNav';
-import { AnchorBoard } from '../components/board/AnchorBoard';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Button } from '../components/ui/Button';
@@ -24,7 +23,7 @@ import { cn } from '../lib/utils';
 export const ProjectDashboardPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { project, tasks, refresh } = useProject(id!);
+  const { project, tasks } = useProject(id!);
   
   if (!project) return <Navigate to="/dashboard" replace />;
 
@@ -74,9 +73,6 @@ export const ProjectDashboardPage: React.FC = () => {
       </div>
 
       <ProjectSubNav />
-
-      {/* Anchor Board: One link per core deliverable, shared across team */}
-      <AnchorBoard project={project} onUpdateProject={refresh} />
 
       {/* Top Stat Tiles */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -224,7 +220,10 @@ export const ProjectDashboardPage: React.FC = () => {
                         <p className="font-medium text-sm truncate">{t.title}</p>
                         <p className="text-xs text-muted-foreground">{col?.name || 'Open'}</p>
                       </div>
-                      <StatusBadge priority={t.priority} />
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <StatusBadge taskType={t.type || 'feature'} />
+                        <StatusBadge priority={t.priority} />
+                      </div>
                     </Link>
                   );
                 })}
