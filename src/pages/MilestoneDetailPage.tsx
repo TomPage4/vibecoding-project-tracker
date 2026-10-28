@@ -4,6 +4,7 @@ import {
   ArrowLeft, 
   Calendar, 
   Trash2,
+  Edit3,
   Plus,
   AlertCircle
 } from 'lucide-react';
@@ -13,13 +14,13 @@ import { permissions } from '../lib/permissions';
 import { ProjectSubNav } from '../components/layout/ProjectSubNav';
 import { Button } from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
+import { StatusBadge } from '../components/ui/StatusBadge';
+import { Modal } from '../components/ui/Modal';
+import { Input } from '../components/ui/Input';
 import { toast } from '../components/ui/Toast';
 import { TaskCard } from '../components/board/TaskCard';
 import { dateUtils } from '../lib/dates';
 import { cn } from '../lib/utils';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 export const MilestoneDetailPage: React.FC = () => {
   const { id: projectId, milestoneId } = useParams<{ id: string; milestoneId: string }>();
@@ -31,6 +32,13 @@ export const MilestoneDetailPage: React.FC = () => {
   
   const [, setTick] = useState(0);
   const refresh = () => setTick(t => t + 1);
+
+  // Edit milestone state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(milestone?.title || '');
+  const [editDueDate, setEditDueDate] = useState(milestone?.dueDate || '');
+  const [editNotes, setEditNotes] = useState(milestone?.notes || '');
+  const [formError, setFormError] = useState('');
 
   if (!project || !milestone) return <Navigate to={`/projects/${projectId}/milestones`} replace />;
 
@@ -50,6 +58,42 @@ export const MilestoneDetailPage: React.FC = () => {
   const isCompleted = totalTasks > 0 && closedTasks === totalTasks;
 
   const [showAddTasks, setShowAddTasks] = useState(false);
+
+  const handleOpenEdit = () => {
+    setEditTitle(milestone.title);
+    setEditDueDate(milestone.dueDate);
+    setEditNotes(milestone.notes || '');
+    setFormError('');
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canManage) return;
+
+    const trimmedTitle = editTitle.trim();
+    if (!trimmedTitle) {
+      setFormError('Milestone title is required');
+      return;
+    }
+
+    if (!editDueDate || isNaN(new Date(editDueDate).getTime())) {
+      setFormError('A valid due date is required');
+      return;
+    }
+
+    const updated = {
+      ...milestone,
+      title: trimmedTitle,
+      dueDate: editDueDate,
+      notes: editNotes.trim(),
+    };
+
+    db.saveMilestone(updated);
+    toast.success('Milestone updated successfully');
+    setIsEditing(false);
+    refresh();
+  };
 
   const handleDelete = () => {
     if (!canManage) return;
@@ -72,38 +116,60 @@ export const MilestoneDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link to={`/projects/${projectId}/milestones`}>
-          <Button variant="ghost" size="icon" aria-label="Back to milestones"><ArrowLeft className="h-5 w-5" /></Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">{milestone.title}</h1>
-          <div className="flex items-center gap-4 mt-1">
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" aria-hidden="true" />
-              <span>Due {dateUtils.formatDate(milestone.dueDate)}</span>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4 min-w-0">
+          <Link to={`/projects/${projectId}/milestones`}>
+            <Button variant="ghost" size="icon" aria-label="Back to milestones">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div className="min-w-0">
+            <h1 className="text-3xl font-bold tracking-tight truncate">{milestone.title}</h1>
+            <div className="flex flex-wrap items-center gap-3 mt-1.5">
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" aria-hidden="true" />
+                <span>Due {dateUtils.formatDate(milestone.dueDate)}</span>
+              </div>
+              {isCompleted ? (
+                <StatusBadge variant="done" label="Done" />
+              ) : isOverdue ? (
+                <StatusBadge variant="overdue" label={`Overdue (${countdown})`} />
+              ) : (
+                <StatusBadge variant="neutral" label={countdown} />
+              )}
             </div>
-            {isCompleted ? (
-              <Badge variant="success">Completed</Badge>
-            ) : isOverdue ? (
-              <Badge variant="destructive">Overdue ({countdown})</Badge>
-            ) : (
-              <Badge variant="outline">{countdown}</Badge>
-            )}
           </div>
         </div>
-        {canManage ? (
-          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={handleDelete} aria-label="Delete milestone" title="Delete milestone">
-            <Trash2 className="h-5 w-5" />
-          </Button>
-        ) : (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground italic">
-            <Button variant="ghost" size="icon" disabled className="opacity-40 cursor-not-allowed" aria-label="Delete milestone (disabled)" title="You don't have permission to delete milestones.">
-              <Trash2 className="h-5 w-5" />
-            </Button>
-            <span>You don't have permission to delete milestones</span>
-          </div>
-        )}
+
+        <div className="flex items-center gap-2">
+          {canManage ? (
+            <>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-1.5" 
+                onClick={handleOpenEdit}
+                aria-label="Edit milestone"
+              >
+                <Edit3 className="h-4 w-4" /> Edit Milestone
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-destructive hover:text-destructive" 
+                onClick={handleDelete} 
+                aria-label="Delete milestone" 
+                title="Delete milestone"
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            </>
+          ) : (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground italic">
+              <span>View-only mode</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <ProjectSubNav />
@@ -112,9 +178,61 @@ export const MilestoneDetailPage: React.FC = () => {
         <div className="flex items-center gap-2 p-2.5 px-3 bg-muted/60 border rounded-lg text-xs text-muted-foreground">
           <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" aria-hidden="true" />
           <span>
-            <strong>Limited Access:</strong> You don't have permission to assign tasks and delte milestones.
+            <strong>Limited Access:</strong> You don't have permission to edit, assign tasks, or delete milestones.
           </span>
         </div>
+      )}
+
+      {/* Edit Milestone Modal */}
+      {isEditing && (
+        <Modal 
+          isOpen={isEditing} 
+          onClose={() => setIsEditing(false)} 
+          title={`Edit Milestone: ${milestone.title}`}
+          className="max-w-lg"
+        >
+          <form onSubmit={handleSaveEdit} className="space-y-4">
+            {formError && (
+              <div className="p-3 text-xs bg-destructive/15 text-destructive rounded-md border border-destructive/20" role="alert">
+                {formError}
+              </div>
+            )}
+            <Input
+              label="Milestone Title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              required
+              autoFocus
+              placeholder="e.g. v1.0 Launch, Alpha Release..."
+            />
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Due Date</label>
+              <Input
+                type="date"
+                value={editDueDate}
+                onChange={(e) => setEditDueDate(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Notes & Objectives</label>
+              <textarea
+                className="flex min-h-[110px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="What objectives must be achieved for this milestone?"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" size="sm">
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -139,7 +257,7 @@ export const MilestoneDetailPage: React.FC = () => {
                 <div 
                   className={cn(
                     "h-full transition-all duration-700",
-                    isCompleted ? "bg-emerald-500" : isOverdue ? "bg-destructive" : "bg-primary"
+                    isCompleted ? "bg-emerald-600" : isOverdue ? "bg-red-600" : "bg-primary"
                   )}
                   style={{ width: `${progress}%` }}
                 />
@@ -150,9 +268,9 @@ export const MilestoneDetailPage: React.FC = () => {
             </div>
 
             {milestone.notes && (
-              <div className="pt-4 border-t prose prose-sm dark:prose-invert max-w-none">
+              <div className="pt-4 border-t max-w-none">
                 <h4 className="text-sm font-bold uppercase text-muted-foreground mb-2">Notes & Objectives</h4>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{milestone.notes}</ReactMarkdown>
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground leading-relaxed">{milestone.notes}</p>
               </div>
             )}
           </CardContent>
@@ -202,7 +320,7 @@ export const MilestoneDetailPage: React.FC = () => {
                 <Plus className="h-4 w-4 mr-2" /> Add Existing Tasks
               </Button>
               <span className="text-xs text-muted-foreground italic">
-                You don't have permissiont o assign tasks to milestones
+                You don't have permission to assign tasks to milestones
               </span>
             </div>
           )}

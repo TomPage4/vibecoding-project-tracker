@@ -3,7 +3,6 @@ import { useParams, Navigate, Link } from 'react-router-dom';
 import { 
   CheckCircle2, 
   Clock, 
-  AlertTriangle, 
   MessageSquareQuote, 
   History,
   AlertCircle,
@@ -13,9 +12,11 @@ import {
 } from 'lucide-react';
 import { db } from '../lib/db';
 import { useAuth } from '../hooks/useAuth';
+import { useProject } from '../hooks/useProject';
 import { ProjectSubNav } from '../components/layout/ProjectSubNav';
+import { AnchorBoard } from '../components/board/AnchorBoard';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
+import { StatusBadge } from '../components/ui/StatusBadge';
 import { Button } from '../components/ui/Button';
 import { dateUtils } from '../lib/dates';
 import { cn } from '../lib/utils';
@@ -23,15 +24,14 @@ import { cn } from '../lib/utils';
 export const ProjectDashboardPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { project, tasks, refresh } = useProject(id!);
   
-  const project = db.getProject(id!);
   if (!project) return <Navigate to="/dashboard" replace />;
 
   const isMember = project.members.some(m => m.userId === user?.id);
   if (!isMember) return <Navigate to="/dashboard" replace />;
 
-  const tasks = db.getTasks(id);
-  const milestones = db.getMilestones(id);
+  const milestones = db.getMilestones(id!);
   const activity = db.getProjectActivity(id!).slice(-10).reverse();
   const prompts = db.getData().prompts.filter(p => tasks.some(t => t.id === p.taskId));
   const errors = db.getData().errors.filter(e => tasks.some(t => t.id === e.taskId));
@@ -52,16 +52,6 @@ export const ProjectDashboardPage: React.FC = () => {
     .filter(m => !dateUtils.isOverdue(m.dueDate))
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
     .slice(0, 3);
-
-  const overdueMilestones = milestones
-    .filter(m => {
-      const milestoneTasks = tasks.filter(t => t.milestoneId === m.id);
-      const isClosed = milestoneTasks.length > 0 && milestoneTasks.every(t => {
-        const col = project.columns.find(c => c.id === t.columnId);
-        return col?.category === 'closed';
-      });
-      return dateUtils.isOverdue(m.dueDate) && !isClosed;
-    });
 
   const promptSuccessRate = {
     worked: prompts.filter(p => p.outcome === 'worked').length,
@@ -84,6 +74,9 @@ export const ProjectDashboardPage: React.FC = () => {
       </div>
 
       <ProjectSubNav />
+
+      {/* Anchor Board: One link per core deliverable, shared across team */}
+      <AnchorBoard project={project} onUpdateProject={refresh} />
 
       {/* Top Stat Tiles */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -165,7 +158,7 @@ export const ProjectDashboardPage: React.FC = () => {
                     <div 
                       className={cn(
                         "h-full",
-                        col.category === 'closed' ? "bg-emerald-500" : col.category === 'in_progress' ? "bg-primary" : "bg-muted-foreground/60"
+                        col.category === 'closed' ? "bg-emerald-600" : col.category === 'in_progress' ? "bg-primary" : "bg-muted-foreground/60"
                       )} 
                       style={{ width: `${percentage}%` }}
                     />
@@ -194,7 +187,7 @@ export const ProjectDashboardPage: React.FC = () => {
                     <div 
                       className={cn(
                         "h-full",
-                        p === 'high' ? "bg-rose-500" : p === 'medium' ? "bg-amber-500" : "bg-emerald-500"
+                        p === 'high' ? "bg-red-600" : p === 'medium' ? "bg-amber-600" : "bg-slate-600"
                       )} 
                       style={{ width: `${percentage}%` }}
                     />
@@ -225,21 +218,13 @@ export const ProjectDashboardPage: React.FC = () => {
                     <Link
                       key={t.id}
                       to={`/projects/${project.id}/tasks/${t.id}`}
-                      className="flex items-center justify-between p-2.5 rounded-md border hover:bg-accent/40 transition-colors"
+                      className="flex items-center justify-between p-2.5 rounded-md border hover:bg-accent/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <div className="space-y-0.5 min-w-0 pr-3">
                         <p className="font-medium text-sm truncate">{t.title}</p>
                         <p className="text-xs text-muted-foreground">{col?.name || 'Open'}</p>
                       </div>
-                      <Badge 
-                        variant="outline" 
-                        className={cn(
-                          "text-[10px] uppercase font-bold shrink-0",
-                          t.priority === 'high' ? "text-rose-500 border-rose-500/30" : t.priority === 'medium' ? "text-amber-500 border-amber-500/30" : "text-emerald-500 border-emerald-500/30"
-                        )}
-                      >
-                        {t.priority}
-                      </Badge>
+                      <StatusBadge priority={t.priority} />
                     </Link>
                   );
                 })}
@@ -265,15 +250,19 @@ export const ProjectDashboardPage: React.FC = () => {
                     const col = project.columns.find(c => c.id === t.columnId);
                     return col?.category === 'closed';
                   }).length;
+                  const countdown = dateUtils.getCountdown(m.dueDate);
                   return (
-                    <div key={m.id} className="flex items-center justify-between p-2.5 rounded-md border bg-card">
-                      <div>
-                        <p className="font-medium text-sm">{m.title}</p>
-                        <p className="text-xs text-muted-foreground">{dateUtils.getCountdown(m.dueDate).text} · {closed}/{mTasks.length} closed</p>
+                    <div key={m.id} className="flex items-center justify-between p-2.5 rounded-md border bg-card gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{m.title}</p>
+                        <p className="text-xs text-muted-foreground">{closed}/{mTasks.length} closed</p>
                       </div>
-                      <Link to={`/projects/${project.id}/milestones/${m.id}`}>
-                        <Button variant="ghost" size="sm">View</Button>
-                      </Link>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <StatusBadge variant={countdown.isOverdue ? 'overdue' : 'neutral'} label={countdown.text} />
+                        <Link to={`/projects/${project.id}/milestones/${m.id}`}>
+                          <Button variant="ghost" size="sm">View</Button>
+                        </Link>
+                      </div>
                     </div>
                   );
                 })}
@@ -295,52 +284,28 @@ export const ProjectDashboardPage: React.FC = () => {
             <p className="text-sm text-muted-foreground italic">No activity recorded yet.</p>
           ) : (
             <div className="space-y-3">
-              {activity.map(event => (
-                <div key={event.id} className="flex items-start gap-3 text-sm pb-2 border-b last:border-0 last:pb-0">
-                  <div className="mt-1">
-                    <History className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              {activity.map(act => {
+                const author = db.getUser(act.actorId);
+                const task = db.getTask(act.taskId);
+                const label = act.type.replace('_', ' ');
+                return (
+                  <div key={act.id} className="flex items-start justify-between text-sm py-1.5 border-b last:border-none">
+                    <div>
+                      <span className="font-semibold">{author?.name || 'User'} </span>
+                      <span className="text-muted-foreground">{label} on </span>
+                      <span className="font-medium text-foreground">{task?.title || 'task'}</span>
+                      {act.to && <span className="text-xs text-muted-foreground ml-1.5">({act.to})</span>}
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0 pl-2">
+                      {dateUtils.formatDate(act.createdAt)}
+                    </span>
                   </div>
-                  <div className="space-y-0.5 flex-1">
-                    <p>
-                      <span className="font-medium">{db.getUser(event.actorId)?.name || 'User'}</span>
-                      {' '}{event.type.replace('_', ' ')}{' '}
-                      <span className="font-medium">{db.getTask(event.taskId)?.title || 'Task'}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {dateUtils.formatDate(event.createdAt)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Overdue Milestones Warning */}
-      {overdueMilestones.length > 0 && (
-        <Card className="border-destructive/50 bg-destructive/5" role="alert">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
-              Overdue Milestones Attention Required
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {overdueMilestones.map(m => (
-              <div key={m.id} className="flex items-center justify-between p-2 rounded bg-card/60 border border-destructive/20">
-                <div>
-                  <p className="font-semibold text-sm">{m.title}</p>
-                  <p className="text-xs text-destructive font-medium">{dateUtils.getCountdown(m.dueDate).text}</p>
-                </div>
-                <Link to={`/projects/${id}/milestones/${m.id}`}>
-                  <Button variant="outline" size="sm" className="border-destructive/30 hover:bg-destructive/10">View Milestone</Button>
-                </Link>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

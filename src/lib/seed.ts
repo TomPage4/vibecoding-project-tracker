@@ -106,6 +106,11 @@ export async function loadDemoData(): Promise<void> {
       extraNotes: 'Adopt clean editorial typography and generous whitespace. Ensure all code blocks have copy buttons.',
       updatedAt: daysAgoIso(1)
     },
+    anchorLinks: {
+      presentation: 'https://slides.example.com/alex-portfolio-deck',
+      demo: 'https://demo.portfolio.dev',
+      documentation: 'https://docs.portfolio.dev/guide'
+    },
     createdAt: daysAgoIso(20)
   };
 
@@ -146,6 +151,11 @@ export async function loadDemoData(): Promise<void> {
       databaseNotes: 'PostgreSQL on Supabase, indexed by userId and date.',
       extraNotes: 'Use optimistic UI updates for habit completion toggles.',
       updatedAt: daysAgoIso(2)
+    },
+    anchorLinks: {
+      presentation: 'https://slides.example.com/habit-tracker-pitch',
+      demo: 'https://habit-tracker.demo.app',
+      report: 'https://docs.google.com/document/d/example-final-report'
     },
     createdAt: daysAgoIso(25)
   };

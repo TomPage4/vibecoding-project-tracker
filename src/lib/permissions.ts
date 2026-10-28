@@ -39,6 +39,11 @@ export const permissions = {
     return role === 'owner' || role === 'admin';
   },
 
+  canEditAnchorBoard(project: Project, userId: string): boolean {
+    const role = this.getRole(project, userId);
+    return role === 'owner' || role === 'admin' || role === 'member';
+  },
+
   isOwner(project: Project, userId: string): boolean {
     return project.ownerId === userId;
   },

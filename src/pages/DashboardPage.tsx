@@ -58,7 +58,7 @@ export const DashboardPage: React.FC = () => {
           <FolderKanban className="h-12 w-12 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold">No projects yet</h2>
           <p className="text-muted-foreground mb-6 max-w-sm">
-            Get started by creating your first project or loading demo data to see how AI Dev Tracker works.
+            Get started by creating your first project or loading demo data to see how SlopForge works.
           </p>
           <div className="flex gap-4">
             <Button variant="outline" onClick={handleLoadDemoData} disabled={loadingDemo}>
@@ -112,8 +112,8 @@ const ProjectCard: React.FC<{ project: any }> = ({ project }) => {
   }).length;
 
   return (
-    <Link to={`/projects/${project.id}`}>
-      <Card className="h-full hover:border-primary/50 transition-colors">
+    <Link to={`/projects/${project.id}`} className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      <Card className="h-full hover:border-primary/50 transition-all hover:shadow-sm">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
             <CardTitle className="text-lg">{project.name}</CardTitle>

@@ -135,7 +135,7 @@ export const TaskDetailPage: React.FC = () => {
           </div>
         )}
 
-        <div className="flex gap-1 border-b mb-6 overflow-x-auto pb-px" role="tablist">
+        <div className="flex gap-1 border-b mb-6 overflow-x-auto pb-1 pt-1" role="tablist">
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -143,9 +143,9 @@ export const TaskDetailPage: React.FC = () => {
               aria-selected={activeTab === tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
+                "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap rounded-t-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                 activeTab === tab.id 
-                  ? "border-primary text-primary" 
+                  ? "border-primary text-primary font-semibold" 
                   : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted"
               )}
             >

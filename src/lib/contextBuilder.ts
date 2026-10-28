@@ -4,7 +4,7 @@ export const contextBuilder = {
   buildProjectSessionStarter(project: Project): string {
     const lines: string[] = [];
     lines.push(`# ${project.name} — AI Context Briefing`);
-    lines.push(`*Generated from AI Dev Tracker on ${new Date().toLocaleDateString()}*\n`);
+    lines.push(`*Generated from SlopForge on ${new Date().toLocaleDateString()}*\n`);
 
     if (project.context.summary?.trim()) {
       lines.push(`## Project Summary\n${project.context.summary.trim()}`);

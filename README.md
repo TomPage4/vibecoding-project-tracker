@@ -1,8 +1,8 @@
-# AI Dev Tracker
+# SlopForge
 
-**AI Dev Tracker** is a developer-focused project management web application tailored for software engineers building with AI tools (Claude, ChatGPT, Gemini, Cursor, Lovable, Copilot, v0, etc.).
+**SlopForge** is a developer-focused project management web application tailored for software engineers building with AI tools (Claude, ChatGPT, Gemini, Cursor, Lovable, Copilot, v0, etc.).
 
-Conventional issue trackers (Jira, Linear, Trello) assume traditional manual coding workflows. AI Dev Tracker treats the AI development lifecycle as a first-class citizen by combining:
+Conventional issue trackers (Jira, Linear, Trello) assume traditional manual coding workflows. SlopForge treats the AI development lifecycle as a first-class citizen by combining:
 1. An accessible **Kanban board** with milestones, column categories, task checklists, and activity history.
 2. An **AI prompt & result log** attached to every task (prompts, outputs, models, outcomes, and tool errors).
 3. A **project context briefing page** with single-click session starters to copy into any AI coding session.

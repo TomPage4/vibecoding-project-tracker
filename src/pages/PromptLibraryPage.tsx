@@ -4,7 +4,7 @@ import { db } from '../lib/db';
 import { ProjectSubNav } from '../components/layout/ProjectSubNav';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
+import { StatusBadge } from '../components/ui/StatusBadge';
 import { Input } from '../components/ui/Input';
 import { 
   Search, 
@@ -165,9 +165,7 @@ export const PromptLibraryPage: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <Badge variant={entry.outcome === 'worked' ? 'success' : entry.outcome === 'partial' ? 'warning' : 'destructive'} className="capitalize">
-                      {entry.outcome}
-                    </Badge>
+                    <StatusBadge variant={entry.outcome} />
                     {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </div>
                 </div>

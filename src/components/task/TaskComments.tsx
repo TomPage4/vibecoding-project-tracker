@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Send } from 'lucide-react';
 import { Comment } from '../../types';
 import { db } from '../../lib/db';
@@ -57,8 +55,10 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({ taskId, disabled = f
                       <span className="text-sm font-semibold">{author?.name}</span>
                       <span className="text-[10px] text-muted-foreground">{dateUtils.formatDate(comment.createdAt)}</span>
                     </div>
-                    <div className="prose prose-sm dark:prose-invert max-w-none bg-secondary/30 p-3 rounded-lg border border-secondary">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.body}</ReactMarkdown>
+                    <div className="bg-secondary/30 p-3 rounded-lg border border-secondary">
+                      <p className="text-sm whitespace-pre-wrap break-words text-foreground leading-relaxed">
+                        {comment.body}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -75,7 +75,7 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({ taskId, disabled = f
             "flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-1 ring-primary",
             disabled && "opacity-60 cursor-not-allowed bg-muted/30"
           )}
-          placeholder={disabled ? "You don't have permission to add comments" : "Add a comment... (Markdown supported)"}
+          placeholder={disabled ? "You don't have permission to add comments" : "Add a comment..."}
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
         />

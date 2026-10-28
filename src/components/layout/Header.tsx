@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, LogOut, User as UserIcon, Plus, ChevronDown, Users } from 'lucide-react';
+import { LogOut, User as UserIcon, Plus, ChevronDown, Users } from 'lucide-react';
+import { AnvilIcon } from '../ui/AnvilIcon';
 import { useAuth } from '../../hooks/useAuth';
 import { ThemeToggle } from '../ThemeToggle';
 import { Button } from '../ui/Button';
@@ -40,9 +41,9 @@ export const Header: React.FC = () => {
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
         <div className="flex items-center gap-4 sm:gap-6">
-          <Link to="/dashboard" className="flex items-center gap-2 font-bold text-xl text-foreground">
-            <Layout className="h-6 w-6 text-primary" aria-hidden="true" />
-            <span className="hidden sm:inline">AI Dev Tracker</span>
+          <Link to="/dashboard" className="flex items-center gap-2 font-bold text-xl text-foreground group" aria-label="SlopForge Dashboard">
+            <AnvilIcon className="h-6 w-6 text-primary transition-transform group-hover:scale-105" aria-hidden="true" />
+            <span className="hidden sm:inline tracking-tight font-extrabold">SlopForge</span>
           </Link>
 
           {user && (

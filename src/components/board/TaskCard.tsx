@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { Task, Column } from '../../types';
 import { Card } from '../ui/Card';
-import { Badge } from '../ui/Badge';
+import { Badge, StatusBadge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 import { db } from '../../lib/db';
@@ -198,30 +198,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {/* Badges / Chips */}
           <div className="flex flex-wrap gap-1.5 items-center">
             {/* Priority with icon and text */}
-            <Badge 
-              variant="outline" 
-              className={cn("px-1.5 h-5 text-[10px] uppercase font-bold", priority.color)}
-            >
-              {priority.icon}
-              <span>{priority.label}</span>
-            </Badge>
+            <StatusBadge priority={task.priority} />
 
             {/* Milestone with icon and countdown text */}
             {milestone && (
-              <Badge 
-                variant="secondary" 
-                className={cn(
-                  "px-1.5 h-5 text-[10px] font-medium gap-1 max-w-[140px] truncate",
-                  milestoneCountdown?.isOverdue && "border border-destructive/40 text-destructive"
-                )}
+              <StatusBadge
+                variant={milestoneCountdown?.isOverdue ? 'overdue' : 'neutral'}
+                label={milestone.title}
                 title={`${milestone.title}: ${milestoneCountdown?.text || ''}`}
-              >
-                <Clock className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
-                <span className="truncate">{milestone.title}</span>
-                {milestoneCountdown && (
-                  <span className="text-[9px] opacity-75">({milestoneCountdown.text})</span>
-                )}
-              </Badge>
+              />
             )}
 
             {/* Labels */}

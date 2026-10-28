@@ -1,5 +1,7 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
+export { StatusBadge } from './StatusBadge';
+export type { StatusBadgeVariant } from './StatusBadge';
 
 interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'secondary' | 'outline' | 'destructive' | 'success' | 'warning';
@@ -7,12 +9,12 @@ interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export const Badge: React.FC<BadgeProps> = ({ className, variant = 'default', ...props }) => {
   const variants = {
-    default: 'border-transparent bg-primary text-primary-foreground hover:bg-primary/80',
+    default: 'border-transparent bg-primary text-primary-foreground hover:bg-primary/90',
     secondary: 'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
-    outline: 'text-foreground',
-    destructive: 'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
-    success: 'border-transparent bg-emerald-500 text-white hover:bg-emerald-500/80',
-    warning: 'border-transparent bg-amber-500 text-white hover:bg-amber-500/80',
+    outline: 'text-foreground border-border',
+    destructive: 'border-transparent bg-red-700 text-white hover:bg-red-800',
+    success: 'border-transparent bg-emerald-700 text-white hover:bg-emerald-800',
+    warning: 'border-transparent bg-amber-700 text-white hover:bg-amber-800',
   };
 
   return (

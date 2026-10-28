@@ -150,7 +150,7 @@ export const ColumnContainer: React.FC<ColumnProps> = ({
               />
             </form>
           ) : (
-            <h2 className="font-semibold text-sm truncate" title={column.name}>
+            <h2 className="font-semibold text-sm line-clamp-1 focus:overflow-visible focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm leading-normal" title={column.name}>
               {column.name}
             </h2>
           )}

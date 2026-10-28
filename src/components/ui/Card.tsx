@@ -12,7 +12,7 @@ export const CardHeader: React.FC<CardProps> = ({ className, ...props }) => (
 );
 
 export const CardTitle: React.FC<CardProps> = ({ className, ...props }) => (
-  <h3 className={cn('text-2xl font-semibold leading-none tracking-tight', className)} {...props} />
+  <h3 className={cn('text-2xl font-semibold leading-snug tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm', className)} {...props} />
 );
 
 export const CardDescription: React.FC<CardProps> = ({ className, ...props }) => (

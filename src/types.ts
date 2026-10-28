@@ -25,6 +25,13 @@ export interface ProjectMember {
   role: Role;
 }
 
+export interface AnchorLinks {
+  presentation?: string;
+  demo?: string;
+  report?: string;
+  documentation?: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -35,6 +42,7 @@ export interface Project {
   columns: Column[];
   labels: string[];                // project-wide label vocabulary
   context: ProjectContext;
+  anchorLinks?: AnchorLinks;       // Anchor Board deliverable links
   createdAt: string;
 }
 

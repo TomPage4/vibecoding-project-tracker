@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <linearGradient id="forgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f97316" />
+      <stop offset="100%" stop-color="#c2410c" />
+    </linearGradient>
+  </defs>
+  <!-- Background rounded shield -->
+  <rect width="32" height="32" rx="7" fill="#18181b" />
+  <!-- Anvil Silhouette in Forge Ember -->
+  <path d="M4 11c0-0.55 0.45-1 1-1h19c2.2 0 4 1.8 4 4 0 1.6-0.9 2.9-2.3 3.5l-2.7 0.9v2.6c0 0.55-0.45 1-1 1h-2c-0.55 0-1 0.45-1 1v1h3c0.55 0 1 0.45 1 1v2H7v-2c0-0.55 0.45-1 1-1h3v-1c0-0.55-0.45-1-1-1H8c-0.55 0-1-0.45-1-1v-2.6l-2-0.7C4.4 13.3 4 12.2 4 11z" fill="url(#forgeGrad)" />
+</svg>

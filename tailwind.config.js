@@ -47,6 +47,10 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      boxShadow: {
+        'ember': '0 0 15px -3px rgba(234, 88, 12, 0.25)',
+        'ember-lg': '0 0 25px -5px rgba(234, 88, 12, 0.35)',
+      },
     },
   },
   plugins: [],

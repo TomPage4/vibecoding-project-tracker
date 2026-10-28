@@ -6,7 +6,11 @@ const DB_UPDATE_EVENT = 'ai-tracker-db-update';
 export function onDbUpdate(listener: () => void): () => void {
   if (typeof window === 'undefined') return () => {};
   window.addEventListener(DB_UPDATE_EVENT, listener);
-  return () => window.removeEventListener(DB_UPDATE_EVENT, listener);
+  window.addEventListener('storage', listener);
+  return () => {
+    window.removeEventListener(DB_UPDATE_EVENT, listener);
+    window.removeEventListener('storage', listener);
+  };
 }
 
 export function notifyDbUpdate(): void {

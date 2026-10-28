@@ -6,7 +6,8 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
 import { toast } from '../components/ui/Toast';
-import { Layout, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+import { AnvilIcon } from '../components/ui/AnvilIcon';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -53,9 +54,9 @@ export const LoginPage: React.FC = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <Layout className="h-10 w-10 text-primary" />
+            <AnvilIcon className="h-12 w-12 text-primary" aria-label="SlopForge Anvil Logo" />
           </div>
-          <CardTitle className="text-2xl">AI Dev Tracker</CardTitle>
+          <CardTitle className="text-2xl font-extrabold tracking-tight">SlopForge</CardTitle>
           <CardDescription>
             Enter your email and password, or load demo data to explore
           </CardDescription>

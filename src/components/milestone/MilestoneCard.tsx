@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, CheckCircle2, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Calendar, ArrowRight } from 'lucide-react';
 import { Milestone, Task, Project } from '../../types';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
-import { Badge } from '../ui/Badge';
+import { StatusBadge } from '../ui/StatusBadge';
 import { dateUtils } from '../../lib/dates';
 import { cn } from '../../lib/utils';
 
@@ -26,30 +26,24 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({ milestone, tasks, 
   const isCompleted = totalTasks > 0 && closedTasks === totalTasks;
 
   return (
-    <Link to={`${milestone.id}`}>
+    <Link to={`${milestone.id}`} aria-label={`Milestone: ${milestone.title}`}>
       <Card className={cn(
         "h-full hover:border-primary/50 transition-colors",
         isOverdue && !isCompleted && "border-destructive/50"
       )}>
         <CardHeader className="pb-3">
-          <div className="flex justify-between items-start mb-2">
+          <div className="flex justify-between items-start mb-2 gap-2">
             <CardTitle className="text-lg line-clamp-1">{milestone.title}</CardTitle>
             {isCompleted ? (
-              <Badge variant="success" className="gap-1">
-                <CheckCircle2 className="h-3 w-3" /> Done
-              </Badge>
+              <StatusBadge variant="done" label="Done" />
             ) : isOverdue ? (
-              <Badge variant="destructive" className="gap-1">
-                <AlertTriangle className="h-3 w-3" /> Overdue
-              </Badge>
+              <StatusBadge variant="overdue" label="Overdue" />
             ) : (
-              <Badge variant="outline" className="gap-1">
-                <Clock className="h-3 w-3" /> {countdown}
-              </Badge>
+              <StatusBadge variant="neutral" label={countdown} />
             )}
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Calendar className="h-3 w-3" />
+            <Calendar className="h-3 w-3" aria-hidden="true" />
             <span>Due {dateUtils.formatDate(milestone.dueDate)}</span>
           </div>
         </CardHeader>
@@ -59,11 +53,11 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({ milestone, tasks, 
               <span className="font-medium text-muted-foreground">Progress</span>
               <span className="font-bold">{progress}%</span>
             </div>
-            <div className="h-2 w-full bg-secondary rounded-full overflow-hidden" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+            <div className="h-2 w-full bg-secondary rounded-full overflow-hidden" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label={`Progress: ${progress}%`}>
               <div 
                 className={cn(
                   "h-full transition-all duration-500",
-                  isCompleted ? "bg-emerald-500" : isOverdue ? "bg-destructive" : "bg-primary"
+                  isCompleted ? "bg-emerald-600" : isOverdue ? "bg-red-600" : "bg-primary"
                 )}
                 style={{ width: `${progress}%` }}
               />

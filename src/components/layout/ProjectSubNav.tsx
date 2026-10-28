@@ -23,21 +23,21 @@ export const ProjectSubNav: React.FC = () => {
   ];
 
   return (
-    <nav aria-label="Project Navigation" className="flex items-center gap-1 border-b mb-6 overflow-x-auto pb-px">
+    <nav aria-label="Project Navigation" className="flex items-center gap-1 border-b mb-6 overflow-x-auto py-1">
       {links.map((link) => (
         <NavLink
           key={link.to}
           to={link.to}
           end={link.end}
           className={({ isActive }) => cn(
-            "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
+            "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap rounded-t-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
             isActive 
-              ? "border-primary text-primary" 
+              ? "border-primary text-primary font-semibold" 
               : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted"
           )}
         >
-          <link.icon className="h-4 w-4" />
-          {link.label}
+          <link.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{link.label}</span>
         </NavLink>
       ))}
     </nav>

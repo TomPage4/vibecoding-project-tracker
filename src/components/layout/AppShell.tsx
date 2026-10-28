@@ -33,7 +33,7 @@ export const AppShell: React.FC = () => {
       <footer className="border-t py-6">
         <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-between gap-4 md:h-14 md:flex-row">
           <p className="text-balance text-center text-xs leading-loose text-muted-foreground md:text-left">
-            AI Dev Tracker — developer tool for AI-assisted development.
+            SlopForge — developer tool for AI-assisted development.
           </p>
         </div>
       </footer>

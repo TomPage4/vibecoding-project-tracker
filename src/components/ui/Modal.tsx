@@ -126,7 +126,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         )}
       >
         <div className="flex items-center justify-between border-b p-4 bg-muted/20">
-          <h2 id="modal-title" className="text-lg font-semibold truncate pr-4 text-foreground">
+          <h2 id="modal-title" className="text-lg font-semibold line-clamp-1 break-words focus:overflow-visible focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm pr-4 text-foreground leading-normal">
             {title}
           </h2>
           <Button 

@@ -5,7 +5,8 @@ import { db } from '../lib/db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
-import { Layout, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
+import { AnvilIcon } from '../components/ui/AnvilIcon';
 
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
@@ -59,11 +60,11 @@ export const RegisterPage: React.FC = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <Layout className="h-10 w-10 text-primary" />
+            <AnvilIcon className="h-12 w-12 text-primary" aria-label="SlopForge Anvil Logo" />
           </div>
-          <CardTitle className="text-2xl">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-extrabold tracking-tight">Create an account</CardTitle>
           <CardDescription>
-            Register for AI Dev Tracker to manage prompts, tasks, and teams
+            Register for SlopForge to manage prompts, tasks, and teams
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
