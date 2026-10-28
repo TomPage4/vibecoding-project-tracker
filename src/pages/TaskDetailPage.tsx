@@ -254,9 +254,8 @@ export const TaskDetailPage: React.FC = () => {
                   </select>
                 </div>
               </div>
-
+              
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Labels</label>
                 <LabelMultiSelect
                   availableLabels={project.labels || []}
                   selectedLabels={task.labels || []}
@@ -265,6 +264,7 @@ export const TaskDetailPage: React.FC = () => {
                   placeholder="Assign labels..."
                 />
               </div>
+
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">AI Context Briefing</label>

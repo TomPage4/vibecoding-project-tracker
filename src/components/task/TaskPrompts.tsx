@@ -6,10 +6,9 @@ import {
   ChevronDown, 
   ChevronUp, 
   Copy,
-  CheckCircle2, 
-  AlertCircle, 
-  HelpCircle, 
   Check, 
+  Minus,
+  X,
   Edit2 
 } from 'lucide-react';
 import { PromptEntry } from '../../types';
@@ -17,7 +16,7 @@ import { db, onDbUpdate } from '../../lib/db';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Badge } from '../ui/Badge';
+import { StatusBadge } from '../ui/StatusBadge';
 import { dateUtils } from '../../lib/dates';
 import { cn } from '../../lib/utils';
 import { announce } from '../../lib/announcer';
@@ -141,16 +140,26 @@ export const TaskPrompts: React.FC<TaskPromptsProps> = ({ taskId, disabled = fal
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const outcomeIcons = {
-    worked: <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden="true" />,
-    partial: <HelpCircle className="h-4 w-4 text-amber-500" aria-hidden="true" />,
-    failed: <AlertCircle className="h-4 w-4 text-rose-500" aria-hidden="true" />
-  };
-
-  const outcomeColors = {
-    worked: 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300',
-    partial: 'text-amber-700 bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300',
-    failed: 'text-rose-700 bg-rose-50 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300'
+  const OUTCOME_CONFIG: Record<PromptEntry['outcome'], {
+    label: string;
+    icon: React.FC<React.SVGProps<SVGSVGElement>>;
+    selectedClass: string;
+  }> = {
+    worked: {
+      label: 'Worked',
+      icon: Check,
+      selectedClass: 'bg-emerald-700 text-white border-emerald-700 shadow-sm',
+    },
+    partial: {
+      label: 'Partially worked',
+      icon: Minus,
+      selectedClass: 'bg-amber-700 text-white border-amber-700 shadow-sm',
+    },
+    failed: {
+      label: 'Failed',
+      icon: X,
+      selectedClass: 'bg-red-700 text-white border-red-700 shadow-sm',
+    },
   };
 
   return (
@@ -202,24 +211,35 @@ export const TaskPrompts: React.FC<TaskPromptsProps> = ({ taskId, disabled = fal
             </div>
             
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Outcome</label>
-              <div className="flex gap-2">
-                {(['worked', 'partial', 'failed'] as const).map(o => (
-                  <button
-                    key={o}
-                    type="button"
-                    onClick={() => setFormData({...formData, outcome: o})}
-                    className={cn(
-                      "flex-1 px-2 py-1.5 text-xs font-semibold rounded border capitalize transition-colors flex items-center justify-center gap-1",
-                      formData.outcome === o 
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm" 
-                        : "bg-background hover:bg-accent text-foreground"
-                    )}
-                  >
-                    {outcomeIcons[o]}
-                    <span>{o === 'partial' ? 'Partially worked' : o}</span>
-                  </button>
-                ))}
+              <label className="text-sm font-medium" id="add-prompt-outcome-label">Outcome</label>
+              <div 
+                className="flex gap-2" 
+                role="radiogroup" 
+                aria-labelledby="add-prompt-outcome-label"
+              >
+                {(['worked', 'partial', 'failed'] as const).map(o => {
+                  const config = OUTCOME_CONFIG[o];
+                  const Icon = config.icon;
+                  const isSelected = formData.outcome === o;
+                  return (
+                    <button
+                      key={o}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      onClick={() => setFormData({ ...formData, outcome: o })}
+                      className={cn(
+                        "flex-1 px-2.5 py-1.5 text-xs font-semibold rounded-md border flex items-center justify-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                        isSelected 
+                          ? config.selectedClass 
+                          : "bg-background hover:bg-accent text-muted-foreground hover:text-foreground border-input"
+                      )}
+                    >
+                      <Icon className={cn("h-3.5 w-3.5 shrink-0", isSelected ? "text-white" : "text-muted-foreground")} aria-hidden="true" />
+                      <span>{config.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -276,19 +296,16 @@ export const TaskPrompts: React.FC<TaskPromptsProps> = ({ taskId, disabled = fal
                 onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
               >
                 <div className="flex items-center gap-3">
-                  {outcomeIcons[entry.outcome]}
+                  <div className="p-2 rounded-md bg-secondary text-secondary-foreground shrink-0" aria-hidden="true">
+                    <MessageSquareQuote className="h-4 w-4" />
+                  </div>
                   <div>
                     <p className="text-sm font-semibold">{entry.model}</p>
                     <p className="text-[11px] text-muted-foreground">{dateUtils.formatDate(entry.createdAt)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge 
-                    variant="outline" 
-                    className={cn("capitalize text-xs font-semibold px-2 py-0.5", outcomeColors[entry.outcome])}
-                  >
-                    {entry.outcome === 'partial' ? 'Partially worked' : entry.outcome}
-                  </Badge>
+                  <StatusBadge variant={entry.outcome} />
                   {expandedId === entry.id ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                 </div>
               </div>
@@ -298,21 +315,35 @@ export const TaskPrompts: React.FC<TaskPromptsProps> = ({ taskId, disabled = fal
                   {editingId === entry.id ? (
                     <div className="space-y-3">
                       <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase text-muted-foreground">Outcome</label>
-                        <div className="flex gap-2">
-                          {(['worked', 'partial', 'failed'] as const).map(o => (
-                            <button
-                              key={o}
-                              type="button"
-                              onClick={() => setEditFormData({...editFormData, outcome: o})}
-                              className={cn(
-                                "flex-1 px-2 py-1 text-xs font-medium rounded border capitalize",
-                                editFormData.outcome === o ? "bg-primary text-primary-foreground" : "bg-background"
-                              )}
-                            >
-                              {o === 'partial' ? 'Partially worked' : o}
-                            </button>
-                          ))}
+                        <label className="text-xs font-bold uppercase text-muted-foreground" id={`edit-outcome-label-${entry.id}`}>Outcome</label>
+                        <div 
+                          className="flex gap-2" 
+                          role="radiogroup" 
+                          aria-labelledby={`edit-outcome-label-${entry.id}`}
+                        >
+                          {(['worked', 'partial', 'failed'] as const).map(o => {
+                            const config = OUTCOME_CONFIG[o];
+                            const Icon = config.icon;
+                            const isSelected = editFormData.outcome === o;
+                            return (
+                              <button
+                                key={o}
+                                type="button"
+                                role="radio"
+                                aria-checked={isSelected}
+                                onClick={() => setEditFormData({ ...editFormData, outcome: o })}
+                                className={cn(
+                                  "flex-1 px-2.5 py-1.5 text-xs font-semibold rounded-md border flex items-center justify-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                                  isSelected 
+                                    ? config.selectedClass 
+                                    : "bg-background hover:bg-accent text-muted-foreground hover:text-foreground border-input"
+                                )}
+                              >
+                                <Icon className={cn("h-3.5 w-3.5 shrink-0", isSelected ? "text-white" : "text-muted-foreground")} aria-hidden="true" />
+                                <span>{config.label}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, AlertCircle, Clock, ArrowDown, Bug, Star } from 'lucide-react';
+import { Check, AlertCircle, Clock, ArrowDown, Bug, Star, X, Minus } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export type StatusBadgeVariant = 
@@ -99,22 +99,31 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
         defaultLabel = 'Feature';
         defaultIcon = <Star className="h-3 w-3 shrink-0" aria-hidden="true" />;
         break;
-      case 'done':
       case 'worked':
-        defaultLabel = effVariant === 'worked' ? 'Worked' : 'Done';
+        defaultLabel = 'Worked';
+        defaultIcon = <Check className="h-3 w-3 shrink-0" aria-hidden="true" />;
+        break;
+      case 'partial':
+        defaultLabel = 'Partially worked';
+        defaultIcon = <Minus className="h-3 w-3 shrink-0" aria-hidden="true" />;
+        break;
+      case 'failed':
+        defaultLabel = 'Failed';
+        defaultIcon = <X className="h-3 w-3 shrink-0" aria-hidden="true" />;
+        break;
+      case 'done':
+        defaultLabel = 'Done';
         defaultIcon = <Check className="h-3 w-3 shrink-0" aria-hidden="true" />;
         break;
       case 'overdue':
-      case 'failed':
       case 'high':
-        defaultLabel = effVariant === 'failed' ? 'Failed' : effVariant === 'high' ? 'High' : 'Overdue';
+        defaultLabel = effVariant === 'high' ? 'High' : 'Overdue';
         defaultIcon = <AlertCircle className="h-3 w-3 shrink-0" aria-hidden="true" />;
         break;
       case 'medium':
-      case 'partial':
       case 'in_progress':
       case 'open':
-        defaultLabel = effVariant === 'partial' ? 'Partial' : effVariant === 'medium' ? 'Medium' : effVariant === 'open' ? 'Open' : 'In progress';
+        defaultLabel = effVariant === 'medium' ? 'Medium' : effVariant === 'open' ? 'Open' : 'In progress';
         defaultIcon = <Clock className="h-3 w-3 shrink-0" aria-hidden="true" />;
         break;
       case 'low':

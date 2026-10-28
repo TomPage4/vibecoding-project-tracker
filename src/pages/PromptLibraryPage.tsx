@@ -9,9 +9,7 @@ import { Input } from '../components/ui/Input';
 import { 
   Search, 
   Copy, 
-  CheckCircle2, 
-  HelpCircle, 
-  AlertCircle, 
+
   Check, 
   ChevronDown, 
   ChevronUp,
@@ -64,12 +62,6 @@ export const PromptLibraryPage: React.FC = () => {
     setCopiedId(id);
     toast.success('Prompt copied to clipboard');
     setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const outcomeIcons = {
-    worked: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
-    partial: <HelpCircle className="h-4 w-4 text-amber-500" />,
-    failed: <AlertCircle className="h-4 w-4 text-destructive" />
   };
 
   return (
@@ -148,7 +140,9 @@ export const PromptLibraryPage: React.FC = () => {
                   onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                 >
                   <div className="flex items-center gap-3">
-                    {outcomeIcons[entry.outcome]}
+                    <div className="p-2 rounded-md bg-secondary text-secondary-foreground shrink-0" aria-hidden="true">
+                      <MessageSquareQuote className="h-4 w-4" />
+                    </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-sm">{entry.model}</span>
