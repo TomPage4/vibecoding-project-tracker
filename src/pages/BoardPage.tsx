@@ -58,6 +58,7 @@ export const BoardPage: React.FC = () => {
 
   // Read filters from URL query string
   const searchQuery = searchParams.get('q') || '';
+  const typeFilter = searchParams.get('type') || '';
   const priorityFilter = searchParams.get('priority') || '';
   const assigneeFilter = searchParams.get('assignee') || '';
   const milestoneFilter = searchParams.get('milestone') || '';
@@ -77,7 +78,7 @@ export const BoardPage: React.FC = () => {
     setSearchParams(new URLSearchParams(), { replace: true });
   };
 
-  const hasActiveFilters = Boolean(searchQuery || priorityFilter || assigneeFilter || milestoneFilter || labelFilter);
+  const hasActiveFilters = Boolean(searchQuery || typeFilter || priorityFilter || assigneeFilter || milestoneFilter || labelFilter);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -93,14 +94,16 @@ export const BoardPage: React.FC = () => {
         t.description.toLowerCase().includes(q) ||
         (t.notes && t.notes.toLowerCase().includes(q));
       
+      const taskType = t.type || 'feature';
+      const matchesType = !typeFilter || taskType === typeFilter;
       const matchesPriority = !priorityFilter || t.priority === priorityFilter;
       const matchesAssignee = !assigneeFilter || (assigneeFilter === 'unassigned' ? !t.assigneeId : t.assigneeId === assigneeFilter);
       const matchesMilestone = !milestoneFilter || (milestoneFilter === 'none' ? !t.milestoneId : t.milestoneId === milestoneFilter);
       const matchesLabel = !labelFilter || t.labels.includes(labelFilter);
 
-      return matchesSearch && matchesPriority && matchesAssignee && matchesMilestone && matchesLabel;
+      return matchesSearch && matchesType && matchesPriority && matchesAssignee && matchesMilestone && matchesLabel;
     });
-  }, [tasks, searchQuery, priorityFilter, assigneeFilter, milestoneFilter, labelFilter]);
+  }, [tasks, searchQuery, typeFilter, priorityFilter, assigneeFilter, milestoneFilter, labelFilter]);
 
   if (!project) return <Navigate to="/dashboard" replace />;
 
@@ -425,6 +428,22 @@ export const BoardPage: React.FC = () => {
         {/* Collapsible Filter Controls */}
         {isFilterPanelOpen && (
           <div className="flex flex-wrap gap-3 p-3 bg-secondary/30 rounded-lg border text-xs items-center">
+            {/* Type filter */}
+            <div className="space-y-1">
+              <label htmlFor="filter-type" className="text-[11px] font-semibold text-muted-foreground uppercase">Type</label>
+              <select
+                id="filter-type"
+                className="h-8 rounded border bg-background px-2 py-1 text-xs block"
+                value={typeFilter}
+                onChange={(e) => updateParam('type', e.target.value)}
+                aria-label="Filter by task type"
+              >
+                <option value="">All</option>
+                <option value="bug">Bugs only</option>
+                <option value="feature">Features only</option>
+              </select>
+            </div>
+
             {/* Priority filter */}
             <div className="space-y-1">
               <label className="text-[11px] font-semibold text-muted-foreground uppercase">Priority</label>

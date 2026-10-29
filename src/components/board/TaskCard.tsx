@@ -41,7 +41,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const assignee = task.assigneeId ? db.getUser(task.assigneeId) : null;
-  const milestone = task.milestoneId ? db.getMilestone(task.milestoneId) : null;
   const promptsCount = db.getPrompts(task.id).length;
   const errorsCount = db.getErrors(task.id).filter(e => !e.resolved).length;
   
@@ -203,7 +202,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             )}
           </div>
 
-          {/* Badges / Chips: Priority, Due Date Status, Milestone tag, Labels */}
+          {/* Badges / Chips: Priority, Due Date Status, Labels */}
           <div className="flex flex-wrap gap-1.5 items-center">
             {/* Priority with icon and text */}
             <StatusBadge priority={task.priority} />
@@ -215,16 +214,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 label={dueCountdown.isOverdue ? 'Overdue' : dueCountdown.text}
                 title={dueCountdown.text}
               />
-            )}
-
-            {/* Milestone plain neutral tag (no icon, no time-based color) */}
-            {milestone && (
-              <span 
-                className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-secondary text-secondary-foreground border border-border/50 truncate max-w-[140px]"
-                title={`Milestone: ${milestone.title}`}
-              >
-                {milestone.title}
-              </span>
             )}
 
             {/* Labels */}
