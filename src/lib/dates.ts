@@ -11,8 +11,10 @@ export const dateUtils = {
     const days = differenceInDays(dueDate, today);
 
     if (days === 0) return { text: 'Due today', isOverdue: false, days };
-    if (days < 0) return { text: `Overdue by ${Math.abs(days)} days`, isOverdue: true, days };
-    return { text: `Due in ${days} days`, isOverdue: false, days };
+    const absDays = Math.abs(days);
+    const dayText = absDays === 1 ? 'day' : 'days';
+    if (days < 0) return { text: `Overdue by ${absDays} ${dayText}`, isOverdue: true, days };
+    return { text: `Due in ${days} ${dayText}`, isOverdue: false, days };
   },
 
   isOverdue(dueDateStr: string): boolean {

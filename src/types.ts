@@ -87,6 +87,7 @@ export interface Task {
   type?: TaskType;                 // task type: 'bug' or 'feature' (default: 'feature')
   assigneeId: string | null;       // a project member
   milestoneId: string | null;
+  dueDate?: string | null;         // YYYY-MM-DD
   labels: string[];
   notes: string;                   // markdown; supports GFM checklists (- [ ] item)
   requirements: Requirement[];     // sub-requirements: what "done" means for this task

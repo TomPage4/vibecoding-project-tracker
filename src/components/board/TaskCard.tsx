@@ -7,7 +7,9 @@ import {
   Clock, 
   User as UserIcon,
   ChevronRight,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Bug,
+  Star
 } from 'lucide-react';
 import { Task, Column } from '../../types';
 import { Card } from '../ui/Card';
@@ -65,9 +67,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   const priority = priorityConfig[task.priority] || priorityConfig.medium;
+  const isBug = (task.type || 'feature') === 'bug';
 
-  // Milestone countdown text
-  const milestoneCountdown = milestone ? dateUtils.getCountdown(milestone.dueDate) : null;
+  // Check column category for completion
+  const effectiveColumns = columns.length > 0 ? columns : (db.getProject(task.projectId)?.columns || []);
+  const currentColumn = effectiveColumns.find(c => c.id === task.columnId);
+  const isCompleted = currentColumn?.category === 'closed';
+
+  // Task due date countdown (only when not completed and due date exists)
+  const dueCountdown = (!isCompleted && task.dueDate) ? dateUtils.getCountdown(task.dueDate) : null;
 
   // Close menu on click outside or Escape
   useEffect(() => {
@@ -116,7 +124,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         onClick={handleCardClick}
         tabIndex={0}
         role="button"
-        aria-label={`${task.title}, type ${task.type || 'feature'}, priority ${priority.label}, column ${columns.find(c => c.id === task.columnId)?.name || ''}`}
+        aria-label={`${task.title}, ${isBug ? 'Bug' : 'Feature'}, priority ${priority.label}${dueCountdown ? `, ${dueCountdown.text}` : ''}, column ${currentColumn?.name || ''}`}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             navigate(`/projects/${projectId || task.projectId}/tasks/${task.id}`);
@@ -127,9 +135,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           isOverlay && "border-primary shadow-lg scale-105"
         )}
       >
-        <div className="p-3.5 pt-3.5 space-y-3">
+        <div className="p-3.5 space-y-2.5">
           <div className="flex justify-between items-start gap-2">
-            <h3 className="text-sm font-medium leading-tight line-clamp-2 text-foreground">
+            <h3 className="text-sm font-medium leading-snug line-clamp-2 break-words text-foreground flex-1">
               {task.title}
             </h3>
 
@@ -195,34 +203,60 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             )}
           </div>
 
-          {/* Badges / Chips */}
+          {/* Badges / Chips: Priority, Due Date Status, Milestone tag, Labels */}
           <div className="flex flex-wrap gap-1.5 items-center">
-            {/* Task Type with icon and text */}
-            <StatusBadge taskType={task.type || 'feature'} />
-
             {/* Priority with icon and text */}
             <StatusBadge priority={task.priority} />
 
-            {/* Milestone with icon and countdown text */}
-            {milestone && (
+            {/* Time-status badge based on due date (not shown on completed tasks) */}
+            {dueCountdown && (
               <StatusBadge
-                variant={milestoneCountdown?.isOverdue ? 'overdue' : 'neutral'}
-                label={milestone.title}
-                title={`${milestone.title}: ${milestoneCountdown?.text || ''}`}
+                variant={dueCountdown.isOverdue ? 'overdue' : 'neutral'}
+                label={dueCountdown.isOverdue ? 'Overdue' : dueCountdown.text}
+                title={dueCountdown.text}
               />
+            )}
+
+            {/* Milestone plain neutral tag (no icon, no time-based color) */}
+            {milestone && (
+              <span 
+                className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-secondary text-secondary-foreground border border-border/50 truncate max-w-[140px]"
+                title={`Milestone: ${milestone.title}`}
+              >
+                {milestone.title}
+              </span>
             )}
 
             {/* Labels */}
             {task.labels.map(label => (
-              <Badge key={label} variant="outline" className="px-1.5 h-5 text-[10px] font-medium">
+              <Badge 
+                key={label} 
+                variant="outline" 
+                className="px-1.5 h-5 text-[10px] font-medium truncate max-w-[110px]"
+                title={label}
+              >
                 {label}
               </Badge>
             ))}
           </div>
 
-          {/* Footer stats: requirements, prompts, tool errors, assignee */}
+          {/* Footer stats: type icon, requirements, prompts, tool errors, assignee */}
           <div className="flex items-center justify-between pt-1">
             <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
+              {/* Type icon only (purple bug or blue star) */}
+              <div 
+                className="flex items-center" 
+                title={isBug ? 'Bug' : 'Feature'}
+                aria-label={isBug ? 'Bug' : 'Feature'}
+              >
+                {isBug ? (
+                  <Bug className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400 shrink-0" aria-hidden="true" />
+                ) : (
+                  <Star className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400 shrink-0" aria-hidden="true" />
+                )}
+                <span className="sr-only">{isBug ? 'Bug' : 'Feature'}</span>
+              </div>
+
               {totalRequirements > 0 && (
                 <div 
                   className="flex items-center gap-1" 
@@ -260,7 +294,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             {/* Assignee */}
             {assignee ? (
               <div 
-                className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
                 title={`Assigned to ${assignee.name}`}
               >
                 <span className="sr-only">Assigned to {assignee.name}</span>
@@ -273,7 +307,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </div>
             ) : (
               <div 
-                className="h-6 w-6 rounded-full border border-dashed flex items-center justify-center text-muted-foreground"
+                className="h-6 w-6 rounded-full border border-dashed flex items-center justify-center text-muted-foreground shrink-0"
                 title="Unassigned"
                 aria-label="Unassigned"
               >

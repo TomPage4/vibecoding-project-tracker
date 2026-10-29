@@ -224,6 +224,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: alexId,
       milestoneId: proj1MilestoneOverdue,
+      dueDate: daysFromNow(-10),
       labels: ['design', 'frontend'],
       notes: 'Implemented using Tailwind gradients and Inter font. Passes AA contrast.',
       requirements: [
@@ -246,6 +247,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: alexId,
       milestoneId: proj1MilestoneOverdue,
+      dueDate: daysFromNow(-8),
       labels: ['frontend'],
       notes: 'Works smoothly via Tailwind class strategy on html tag.',
       requirements: [
@@ -268,6 +270,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: alexId,
       milestoneId: proj1MilestoneOverdue, // Incomplete in overdue milestone
+      dueDate: daysFromNow(-2),
       labels: ['frontend', 'design'],
       notes: 'Cards render nicely. Need to confirm keyboard focus outlines.',
       requirements: [
@@ -291,6 +294,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: alexId,
       milestoneId: proj1MilestoneUpcoming,
+      dueDate: daysFromNow(2),
       labels: ['content', 'frontend'],
       notes: 'Remark GFM integration tested.',
       requirements: [
@@ -313,6 +317,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: alexId,
       milestoneId: proj1MilestoneUpcoming,
+      dueDate: daysFromNow(0),
       labels: ['frontend'],
       notes: 'Drafting form validation logic with aria-describedby.',
       requirements: [
@@ -335,6 +340,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: null,
       milestoneId: proj1MilestoneUpcoming,
+      dueDate: daysFromNow(4),
       labels: ['seo'],
       notes: '',
       requirements: [
@@ -357,6 +363,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'bug',
       assigneeId: alexId,
       milestoneId: proj1MilestoneUpcoming,
+      dueDate: daysFromNow(1),
       labels: ['performance'],
       notes: '',
       requirements: [
@@ -379,6 +386,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'bug',
       assigneeId: null,
       milestoneId: null,
+      dueDate: null,
       labels: ['frontend'],
       notes: '',
       requirements: [],
@@ -402,6 +410,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: alexId,
       milestoneId: proj2Ms1,
+      dueDate: daysFromNow(-18),
       labels: ['api', 'core'],
       notes: 'Schema created with foreign keys and unique constraints.',
       requirements: [
@@ -424,6 +433,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: samId,
       milestoneId: proj2Ms1,
+      dueDate: daysFromNow(-15),
       labels: ['core'],
       notes: 'Unit tests passing with 100% branch coverage.',
       requirements: [
@@ -446,6 +456,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: samId,
       milestoneId: proj2Ms1,
+      dueDate: daysFromNow(-12),
       labels: ['ui', 'mobile'],
       notes: 'Haptic feedback on tap tested on iOS and Android.',
       requirements: [
@@ -468,6 +479,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'bug',
       assigneeId: alexId,
       milestoneId: proj2Ms2,
+      dueDate: daysFromNow(-1),
       labels: ['core', 'mobile'],
       notes: 'Conflict resolution strategy: latest timestamp wins.',
       requirements: [
@@ -490,6 +502,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: samId,
       milestoneId: proj2Ms2,
+      dueDate: daysFromNow(3),
       labels: ['analytics', 'ui'],
       notes: 'Generating SVG grid. Ensuring high-contrast color palette.',
       requirements: [
@@ -512,6 +525,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: alexId,
       milestoneId: proj2Ms2,
+      dueDate: daysFromNow(0),
       labels: ['ui'],
       notes: 'Websocket connection or short polling for notifications.',
       requirements: [
@@ -534,6 +548,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: samId,
       milestoneId: proj2Ms3,
+      dueDate: daysFromNow(6),
       labels: ['mobile'],
       notes: '',
       requirements: [
@@ -556,6 +571,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: null,
       milestoneId: proj2Ms3,
+      dueDate: null,
       labels: ['core'],
       notes: '',
       requirements: [],
@@ -575,6 +591,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'feature',
       assigneeId: alexId,
       milestoneId: proj2Ms3,
+      dueDate: daysFromNow(8),
       labels: ['core'],
       notes: '',
       requirements: [],
@@ -594,6 +611,7 @@ export async function loadDemoData(): Promise<void> {
       type: 'bug',
       assigneeId: samId,
       milestoneId: null,
+      dueDate: null,
       labels: ['ui'],
       notes: '',
       requirements: [],

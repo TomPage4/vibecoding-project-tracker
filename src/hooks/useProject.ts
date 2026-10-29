@@ -37,6 +37,7 @@ export const useProject = (projectId: string) => {
       type: type || 'feature',
       assigneeId: null,
       milestoneId: null,
+      dueDate: null,
       labels: labels || [],
       notes: '',
       requirements: [],

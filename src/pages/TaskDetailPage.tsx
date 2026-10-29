@@ -20,6 +20,7 @@ import { announce } from '../lib/announcer';
 import { toast } from '../components/ui/Toast';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 import { TaskRequirements } from '../components/task/TaskRequirements';
 import { TaskNotes } from '../components/task/TaskNotes';
 import { TaskActivity } from '../components/task/TaskActivity';
@@ -192,7 +193,7 @@ export const TaskDetailPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label htmlFor="task-type-select" className="text-sm font-medium">Type</label>
                   <select
@@ -247,11 +248,36 @@ export const TaskDetailPage: React.FC = () => {
                     value={task.milestoneId || ''}
                     onChange={(e) => handleUpdate({ milestoneId: e.target.value || null })}
                   >
-                    <option value="">No Milestone</option>
+                    <option value="">None</option>
                     {milestones.map(m => (
                       <option key={m.id} value={m.id}>{m.title}</option>
                     ))}
                   </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="task-due-date-input" className="text-sm font-medium">Due Date</label>
+                    {task.dueDate && canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => handleUpdate({ dueDate: null })}
+                        className="text-xs text-muted-foreground hover:text-foreground underline focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+                        title="Clear due date"
+                        aria-label="Clear due date"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <Input
+                    id="task-due-date-input"
+                    type="date"
+                    disabled={!canEdit}
+                    value={task.dueDate || ''}
+                    onChange={(e) => handleUpdate({ dueDate: e.target.value || null })}
+                    aria-label="Task due date"
+                  />
                 </div>
               </div>
               
